@@ -45,9 +45,6 @@ function MagnitudeViewer({ width, height, re, im }: CanvasProps) {
       amplitudes.push(amplitude);
     }
 
-    console.log(amplitudes);
-    console.log(maxAmplitude);
-
     // convert to gray range [0-256)
     const context = canvasRef.current.getContext('2d');
     const imageData = context.getImageData(0, 0, width, height);
