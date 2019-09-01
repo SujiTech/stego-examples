@@ -1,14 +1,17 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import Viewer from '../components/Viewer';
-import Canvas from '../components/Canvas';
-import Checkbox from '../components/Checkbox';
-import { CanvasProps } from '../types';
+import Viewer from '../../components/Viewer';
+import Canvas from '../../components/Canvas';
+import Checkbox from '../../components/Checkbox';
+import { CanvasProps } from '../../types';
 
-function OriginalViewer({ width, height, res, ims }: CanvasProps) {
+function RGBViewer({ width, height, res, ims }: CanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [useR, setUseR] = useState(true);
-  const [useG, setUseG] = useState(false);
-  const [useB, setUseB] = useState(false);
+  const [useG, setUseG] = useState(true);
+  const [useB, setUseB] = useState(true);
+  const [useY, setUseY] = useState(false);
+  const [useCb, setUseCb] = useState(false);
+  const [useCr, setUseCr] = useState(false);
   const handleCheckboxChange = useCallback(
     (channel: 'R' | 'G' | 'B') => {
       return () => {
@@ -25,7 +28,7 @@ function OriginalViewer({ width, height, res, ims }: CanvasProps) {
         }
       };
     },
-    [useR, useG, useB]
+    [useR, useG, useB, useY, useCb, useCr]
   );
 
   useEffect(() => {
@@ -54,9 +57,8 @@ function OriginalViewer({ width, height, res, ims }: CanvasProps) {
   }, [canvasRef, width, height, res, ims, useR, useG, useB]);
 
   return (
-    <Viewer title="Original">
+    <Viewer title="RGB">
       <Canvas width={width} height={height} ref={canvasRef} />
-      <br />
       <Checkbox label="R" checked={useR} onChange={handleCheckboxChange('R')} />
       <Checkbox label="G" checked={useG} onChange={handleCheckboxChange('G')} />
       <Checkbox label="B" checked={useB} onChange={handleCheckboxChange('B')} />
@@ -64,4 +66,4 @@ function OriginalViewer({ width, height, res, ims }: CanvasProps) {
   );
 }
 
-export default OriginalViewer;
+export default RGBViewer;
