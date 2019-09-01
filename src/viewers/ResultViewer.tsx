@@ -31,8 +31,7 @@ function ResultViewer({ width, height, re, im }: CanvasProps) {
     context.putImageData(imageData, 0, 0);
   }, [canvasRef, re, im]);
   return (
-    <Viewer>
-      <h2>Result</h2>
+    <Viewer title="Result">
       <Canvas width={width} height={height} ref={canvasRef} />
     </Viewer>
   );

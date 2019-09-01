@@ -70,8 +70,7 @@ function SteganographyViewer({ width, height, re, im }: CanvasProps) {
   }, [canvasRef, re, im]);
 
   return (
-    <Viewer>
-      <h2>Steganography</h2>
+    <Viewer title="Steganography">
       <Canvas width={width} height={height} ref={canvasRef} />
     </Viewer>
   );

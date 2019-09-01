@@ -12,13 +12,8 @@ import ResultViewer from './viewers/ResultViewer';
 function App() {
   const WIDTH = 256;
   const HEIGHT = 256;
-  const [re, im] = useImage({
+  const [res, ims] = useImage({
     url: './assets/grace.png',
-    width: WIDTH,
-    height: HEIGHT,
-  });
-  const [re1, im1] = useImage({
-    url: './assets/grace-compressed.jpg',
     width: WIDTH,
     height: HEIGHT,
   });
@@ -28,22 +23,13 @@ function App() {
   // });
 
   return (
-    <>
-      <Container>
-        <OriginalViewer width={256} height={256} re={re} im={im} />
-        <PhaseViewer width={256} height={256} re={re} im={im} />
-        <MagnitudeViewer width={256} height={256} re={re} im={im} />
-        <ResultViewer width={256} height={256} re={re} im={im} />
-        <SteganographyViewer width={256} height={256} re={re} im={im} />
-      </Container>
-      <Container>
-        <OriginalViewer width={256} height={256} re={re1} im={im1} />
-        <PhaseViewer width={256} height={256} re={re1} im={im1} />
-        <MagnitudeViewer width={256} height={256} re={re1} im={im1} />
-        <ResultViewer width={256} height={256} re={re1} im={im1} />
-        <SteganographyViewer width={256} height={256} re={re1} im={im1} />
-      </Container>
-    </>
+    <Container>
+      <OriginalViewer width={256} height={256} res={res} ims={ims} />
+      {/* <PhaseViewer width={256} height={256} re={re} im={im} />
+      <MagnitudeViewer width={256} height={256} re={re} im={im} />
+      <ResultViewer width={256} height={256} re={re} im={im} />
+      <SteganographyViewer width={256} height={256} re={re} im={im} /> */}
+    </Container>
   );
 }
 

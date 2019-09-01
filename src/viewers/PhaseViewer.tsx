@@ -52,8 +52,7 @@ function PhaseViewer({ width, height, re, im }: CanvasProps) {
   }, [canvasRef, re, im]);
 
   return (
-    <Viewer>
-      <h2>Phase</h2>
+    <Viewer title="Phase">
       <Canvas width={width} height={height} ref={canvasRef} />
     </Viewer>
   );

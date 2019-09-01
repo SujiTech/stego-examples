@@ -7,8 +7,8 @@ interface ImageProps {
 }
 
 export function useImage({ width, height, url }: ImageProps) {
-  const [re, setRe] = useState(null);
-  const [im, setIm] = useState(null);
+  const [re, setRe] = useState<number[][]>([]);
+  const [im, setIm] = useState<number[][]>([]);
   const onLoad = useCallback((ev: Event) => {
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
@@ -25,8 +25,16 @@ export function useImage({ width, height, url }: ImageProps) {
 
     const { data } = context.getImageData(0, 0, width, height);
 
-    setRe(Array.from(data.filter((_, i) => i % 4 === 0)));
-    setIm(new Array(width * height).fill(0));
+    setRe([
+      Array.from(data.filter((_, i) => i % 4 === 0)),
+      Array.from(data.filter((_, i) => i % 4 === 1)),
+      Array.from(data.filter((_, i) => i % 4 === 2)),
+    ]);
+    setIm([
+      new Array(width * height).fill(0),
+      new Array(width * height).fill(0),
+      new Array(width * height).fill(0),
+    ]);
   }, []);
 
   useEffect(() => {

@@ -7,6 +7,7 @@ import React, {
 } from 'react';
 import Viewer from '../components/Viewer';
 import Canvas from '../components/Canvas';
+import Checkbox from '../components/Checkbox';
 import { CanvasProps } from '../types';
 import FFT from '../fft';
 
@@ -68,19 +69,14 @@ function MagnitudeViewer({ width, height, re, im }: CanvasProps) {
   }, [canvasRef, im, re, useLog]);
 
   return (
-    <Viewer>
-      <h2>Magnitude</h2>
+    <Viewer title="Magnitude">
       <Canvas width={width} height={height} ref={canvasRef} />
-      <div>
-        <label>
-          <input
-            type="checkbox"
-            checked={useLog}
-            onChange={handleCheckboxChange}
-          />
-          <label>Use Log</label>
-        </label>
-      </div>
+      <br />
+      <Checkbox
+        label="Use Log"
+        checked={useLog}
+        onChange={handleCheckboxChange}
+      />
     </Viewer>
   );
 }

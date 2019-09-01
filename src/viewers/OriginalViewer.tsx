@@ -1,13 +1,35 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import Viewer from '../components/Viewer';
 import Canvas from '../components/Canvas';
+import Checkbox from '../components/Checkbox';
 import { CanvasProps } from '../types';
 
-function OriginalViewer({ width, height, re, im }: CanvasProps) {
+function OriginalViewer({ width, height, res, ims }: CanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [useR, setUseR] = useState(true);
+  const [useG, setUseG] = useState(false);
+  const [useB, setUseB] = useState(false);
+  const handleCheckboxChange = useCallback(
+    (channel: 'R' | 'G' | 'B') => {
+      return () => {
+        switch (channel) {
+          case 'R':
+            setUseR(!useR);
+            break;
+          case 'G':
+            setUseG(!useG);
+            break;
+          case 'B':
+            setUseB(!useB);
+            break;
+        }
+      };
+    },
+    [useR, useG, useB]
+  );
 
   useEffect(() => {
-    if (!canvasRef.current || !re || !im) {
+    if (!canvasRef.current || !res || !ims || !res.length || !ims.length) {
       return;
     }
 
@@ -17,22 +39,27 @@ function OriginalViewer({ width, height, re, im }: CanvasProps) {
     for (let h = 0; h < height; h += 1) {
       for (let w = 0; w < width; w += 1) {
         const index = (h * width + w) * 4;
-        const color = re[h * width + w];
+        const r = useR ? res[0][h * width + w] : 0;
+        const g = useG ? res[1][h * width + w + 1] : 0;
+        const b = useB ? res[2][h * width + w + 2] : 0;
 
-        imageData.data[index] = color;
-        imageData.data[index + 1] = color;
-        imageData.data[index + 2] = color;
+        imageData.data[index] = r;
+        imageData.data[index + 1] = g;
+        imageData.data[index + 2] = b;
         imageData.data[index + 3] = 255;
       }
     }
     context.clearRect(0, 0, width, height);
     context.putImageData(imageData, 0, 0);
-  }, [canvasRef, width, height, re, im]);
+  }, [canvasRef, width, height, res, ims, useR, useG, useB]);
 
   return (
-    <Viewer>
-      <h2>Original</h2>
+    <Viewer title="Original">
       <Canvas width={width} height={height} ref={canvasRef} />
+      <br />
+      <Checkbox label="R" checked={useR} onChange={handleCheckboxChange('R')} />
+      <Checkbox label="G" checked={useG} onChange={handleCheckboxChange('G')} />
+      <Checkbox label="B" checked={useB} onChange={handleCheckboxChange('B')} />
     </Viewer>
   );
 }
