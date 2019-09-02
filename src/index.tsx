@@ -14,7 +14,7 @@ function App() {
   const WIDTH = 256;
   const HEIGHT = 256;
   const [res, ims] = useImage({
-    url: './assets/grace.png',
+    url: './assets/lena.jpg',
     width: WIDTH,
     height: HEIGHT,
   });
