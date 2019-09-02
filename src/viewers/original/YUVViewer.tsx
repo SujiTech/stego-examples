@@ -8,19 +8,25 @@ import { yuv2rgb } from '../../helpers';
 function YUVViewer({ width, height, res, ims }: CanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [useY, setUseY] = useState(true);
-  const [useCb, setUseCb] = useState(true);
-  const [useCr, setUseCr] = useState(true);
+  const [useCb, setUseCb] = useState(false);
+  const [useCr, setUseCr] = useState(false);
   const handleCheckboxChange = useCallback(
     (channel: 'Y' | 'Cb' | 'Cr') => {
       return () => {
         switch (channel) {
           case 'Y':
             setUseY(!useY);
+            setUseCb(false);
+            setUseCr(false);
             break;
           case 'Cb':
+            setUseY(false);
             setUseCb(!useCb);
+            setUseCr(false);
             break;
           case 'Cr':
+            setUseY(false);
+            setUseCb(false);
             setUseCr(!useCr);
             break;
         }
@@ -56,15 +62,22 @@ function YUVViewer({ width, height, res, ims }: CanvasProps) {
   }, [canvasRef, width, height, res, ims, useY, useCb, useCr]);
 
   return (
-    <Viewer title="Original YUV">
+    <Viewer title="YUV">
       <Canvas width={width} height={height} ref={canvasRef} />
-      <Checkbox label="Y" checked={useY} onChange={handleCheckboxChange('Y')} />
       <Checkbox
+        type="radio"
+        label="Y"
+        checked={useY}
+        onChange={handleCheckboxChange('Y')}
+      />
+      <Checkbox
+        type="radio"
         label="Cb"
         checked={useCb}
         onChange={handleCheckboxChange('Cb')}
       />
       <Checkbox
+        type="radio"
         label="Cr"
         checked={useCr}
         onChange={handleCheckboxChange('Cr')}

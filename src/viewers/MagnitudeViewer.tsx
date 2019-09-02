@@ -255,7 +255,7 @@ function MagnitudeViewer({ width, height, res, ims }: CanvasProps) {
         onChange={handleColorCheckboxChange('Cr')}
       />
       <Checkbox
-        label="Use Log"
+        label="Use Logarithm"
         checked={useLog}
         onChange={handleLogCheckboxChange}
       />

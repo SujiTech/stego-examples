@@ -5,16 +5,17 @@ import { useImage } from './hooks/useImage';
 import { useHorizontalGradient } from './hooks/useGradient';
 import OriginalRGBViewer from './viewers/original/RGBViewer';
 import OriginalYUVViewer from './viewers/original/YUVViewer';
+import BlockViewer from './viewers/BlockViewer';
 import PhaseViewer from './viewers/PhaseViewer';
 import MagnitudeViewer from './viewers/MagnitudeViewer';
 import SteganographyRGBViewer from './viewers/stego/RGBViewer';
 import SteganographyHUVViewer from './viewers/stego/HUVViewer';
 
 function App() {
-  const WIDTH = 256;
-  const HEIGHT = 256;
+  const WIDTH = 512;
+  const HEIGHT = 512;
   const [res, ims] = useImage({
-    url: './assets/lena.jpg',
+    url: './assets/mountain.jpg',
     width: WIDTH,
     height: HEIGHT,
   });
@@ -25,12 +26,18 @@ function App() {
 
   return (
     <Container>
-      <OriginalRGBViewer width={256} height={256} res={res} ims={ims} />
-      <OriginalYUVViewer width={256} height={256} res={res} ims={ims} />
-      <PhaseViewer width={256} height={256} res={res} ims={ims} />
-      <MagnitudeViewer width={256} height={256} res={res} ims={ims} />
-      <SteganographyRGBViewer width={256} height={256} res={res} ims={ims} />
-      <SteganographyHUVViewer width={256} height={256} res={res} ims={ims} />
+      <SteganographyRGBViewer
+        width={WIDTH}
+        height={HEIGHT}
+        res={res}
+        ims={ims}
+      />
+      <SteganographyHUVViewer
+        width={WIDTH}
+        height={HEIGHT}
+        res={res}
+        ims={ims}
+      />
     </Container>
   );
 }

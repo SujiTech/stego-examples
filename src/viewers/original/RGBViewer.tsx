@@ -57,7 +57,7 @@ function RGBViewer({ width, height, res, ims }: CanvasProps) {
   }, [canvasRef, width, height, res, ims, useR, useG, useB]);
 
   return (
-    <Viewer title="Original RGB">
+    <Viewer title="RGB">
       <Canvas width={width} height={height} ref={canvasRef} />
       <Checkbox label="R" checked={useR} onChange={handleCheckboxChange('R')} />
       <Checkbox label="G" checked={useG} onChange={handleCheckboxChange('G')} />

@@ -8,6 +8,7 @@ import React, {
 import Viewer from '../../components/Viewer';
 import Canvas from '../../components/Canvas';
 import Checkbox from '../../components/Checkbox';
+import { divideIntoBlocks } from '../../stego';
 import { CanvasProps } from '../../types';
 import FFT from '../../fft';
 
@@ -79,47 +80,53 @@ function SteganographyViewer({ width, height, res, ims }: CanvasProps) {
     selectedRes.forEach((_, index) => {
       const re = selectedRes[index];
       const im = selectedIms[index];
+      const reBlocks = divideIntoBlocks(width, height, 8, re);
 
-      FFT.init(width);
-      FFT.fft2d(re, im);
-
-      let maxAmplitude = Number.NEGATIVE_INFINITY;
-      let amplitudes: number[] = [];
-
-      for (let i = 0; i < width * height; i += 1) {
-        re[i] += Math.round(Math.random() * 2000);
-        im[i] += Math.round(Math.random() * 20000);
-
-        const reVal = re[i];
-        const imVal = im[i];
-        const amplitude = Math.sqrt(reVal * reVal + imVal * imVal);
-
-        if (amplitude > maxAmplitude) {
-          maxAmplitude = amplitude + 200;
-        }
-        amplitudes.push(amplitude + 200);
-      }
-
-      // convert to gray range [0-256)
       const context = canvasRef.current.getContext('2d');
       const imageData = context.getImageData(0, 0, width, height);
 
-      for (let i = 0; i < amplitudes.length; i += 1) {
-        const index = i * 4;
-        const color = Math.floor((amplitudes[i] * 256) / maxAmplitude) + 1;
+      reBlocks.forEach((block, num) => {
+        const color = Math.floor(Math.random() * 255);
 
-        imageData.data[index] = color;
-        imageData.data[index + 1] = color;
-        imageData.data[index + 2] = color;
-        imageData.data[index + 3] = 255;
-      }
+        block.forEach(i => {
+          const index = i * 4;
 
-      // draw the spectrum
+          imageData.data[index] = color;
+          imageData.data[index + 1] = color;
+          imageData.data[index + 2] = color;
+          imageData.data[index + 3] = 255;
+        });
+      });
+
+      // FFT.init(width);
+      // FFT.fft2d(re, im);
+
+      // let maxAmplitude = Number.NEGATIVE_INFINITY;
+      // let amplitudes: number[] = [];
+
+      // for (let i = 0; i < width * height; i += 1) {
+      //   re[i] += Math.round(Math.random() * 2000);
+      //   im[i] += Math.round(Math.random() * 20000);
+
+      //   const reVal = re[i];
+      //   const imVal = im[i];
+      //   const amplitude = Math.sqrt(reVal * reVal + imVal * imVal);
+
+      //   if (amplitude > maxAmplitude) {
+      //     maxAmplitude = amplitude + 200;
+      //   }
+      //   amplitudes.push(amplitude + 200);
+      // }
+
+      // // convert to gray range [0-256)
+      // const context = canvasRef.current.getContext('2d');
+      // const imageData = context.getImageData(0, 0, width, height);
+
       context.clearRect(0, 0, width, height);
       context.putImageData(imageData, 0, 0);
 
-      // revoke
-      FFT.ifft2d(re, im);
+      // // revoke
+      // FFT.ifft2d(re, im);
     });
   }, [canvasRef, res, ims, useR, useG, useG]);
 
@@ -132,6 +139,7 @@ function SteganographyViewer({ width, height, res, ims }: CanvasProps) {
         value={text}
         onChange={handleInputChange}
       />
+      <input type="number" placeholder="Number of copies" />
       <button onClick={handleWriteButtonClick}>Write</button>
       <button onClick={handleReadButtonClick}>Read</button>
       <Checkbox label="R" checked={useR} onChange={handleCheckboxChange('R')} />
