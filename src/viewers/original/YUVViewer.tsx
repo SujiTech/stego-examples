@@ -56,7 +56,7 @@ function YUVViewer({ width, height, res, ims }: CanvasProps) {
   }, [canvasRef, width, height, res, ims, useY, useCb, useCr]);
 
   return (
-    <Viewer title="YUV">
+    <Viewer title="Original YUV">
       <Canvas width={width} height={height} ref={canvasRef} />
       <Checkbox label="Y" checked={useY} onChange={handleCheckboxChange('Y')} />
       <Checkbox

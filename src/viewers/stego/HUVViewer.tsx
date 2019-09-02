@@ -122,7 +122,7 @@ function SteganographyViewer({ width, height, res, ims }: CanvasProps) {
   }, [canvasRef, res, ims, useY, useCb, useCr]);
 
   return (
-    <Viewer title="Stego">
+    <Viewer title="Stego HUV">
       <Canvas width={width} height={height} ref={canvasRef} />
       <input
         type="text"

@@ -38,6 +38,8 @@ function SteganographyViewer({ width, height, res, ims }: CanvasProps) {
     },
     [useR, useG, useB]
   );
+  const handleWriteButtonClick = useCallback(() => {}, []);
+  const handleReadButtonClick = useCallback(() => {}, []);
 
   useEffect(() => {
     if (!canvasRef.current || !res || !ims || !res.length || !ims.length) {
@@ -122,7 +124,7 @@ function SteganographyViewer({ width, height, res, ims }: CanvasProps) {
   }, [canvasRef, res, ims, useR, useG, useG]);
 
   return (
-    <Viewer title="Stego">
+    <Viewer title="Stego RGB">
       <Canvas width={width} height={height} ref={canvasRef} />
       <input
         type="text"
@@ -130,6 +132,8 @@ function SteganographyViewer({ width, height, res, ims }: CanvasProps) {
         value={text}
         onChange={handleInputChange}
       />
+      <button onClick={handleWriteButtonClick}>Write</button>
+      <button onClick={handleReadButtonClick}>Read</button>
       <Checkbox label="R" checked={useR} onChange={handleCheckboxChange('R')} />
       <Checkbox label="G" checked={useG} onChange={handleCheckboxChange('G')} />
       <Checkbox label="B" checked={useB} onChange={handleCheckboxChange('B')} />
