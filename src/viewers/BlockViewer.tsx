@@ -14,6 +14,7 @@ function BlockViewer({ width, height, res, ims }: CanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sizeRef = useRef<HTMLInputElement>(null);
   const [size, setSize] = useState(8);
+  const [total, setTotal] = useState(0);
   const handleSizeChange = useCallback((ev: ChangeEvent<HTMLInputElement>) => {
     setSize(parseInt(ev.currentTarget.value, 10));
   }, []);
@@ -30,7 +31,6 @@ function BlockViewer({ width, height, res, ims }: CanvasProps) {
       return;
     }
 
-    // const reBlocks = divideIntoBlocks(width, height, size, res[0]);
     const context = canvasRef.current.getContext('2d');
     const imageData = context.getImageData(0, 0, width, height);
 
@@ -45,6 +45,8 @@ function BlockViewer({ width, height, res, ims }: CanvasProps) {
     // blocks
     const hSize = Math.floor(height / size) * size;
     const wSize = Math.floor(width / size) * size;
+
+    setTotal((hSize * wSize) / size / size);
 
     for (let h1 = 0; h1 < hSize; h1 += size) {
       for (let w1 = 0; w1 < wSize; w1 += size) {
@@ -74,12 +76,13 @@ function BlockViewer({ width, height, res, ims }: CanvasProps) {
         <input
           ref={sizeRef}
           type="range"
-          min="0"
+          min="4"
           max={Math.min(width, height)}
           onChange={handleSizeChange}
         />
         <span>
-          {size}*{size}
+          {width}*{height} / {size}*{size} / {total} blocks / {total * 3} bits /{' '}
+          {(total * 3) / 8} bytes
         </span>
       </div>
     </Viewer>

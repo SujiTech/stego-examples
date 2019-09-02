@@ -7,28 +7,31 @@ import { CanvasProps } from '../../types';
 function RGBViewer({ width, height, res, ims }: CanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [useR, setUseR] = useState(true);
-  const [useG, setUseG] = useState(true);
-  const [useB, setUseB] = useState(true);
-  const [useY, setUseY] = useState(false);
-  const [useCb, setUseCb] = useState(false);
-  const [useCr, setUseCr] = useState(false);
+  const [useG, setUseG] = useState(false);
+  const [useB, setUseB] = useState(false);
   const handleCheckboxChange = useCallback(
     (channel: 'R' | 'G' | 'B') => {
       return () => {
         switch (channel) {
           case 'R':
             setUseR(!useR);
+            setUseG(false);
+            setUseB(false);
             break;
           case 'G':
+            setUseR(false);
             setUseG(!useG);
+            setUseB(false);
             break;
           case 'B':
+            setUseR(false);
+            setUseG(false);
             setUseB(!useB);
             break;
         }
       };
     },
-    [useR, useG, useB, useY, useCb, useCr]
+    [useR, useG, useB]
   );
 
   useEffect(() => {
@@ -59,9 +62,24 @@ function RGBViewer({ width, height, res, ims }: CanvasProps) {
   return (
     <Viewer title="RGB">
       <Canvas width={width} height={height} ref={canvasRef} />
-      <Checkbox label="R" checked={useR} onChange={handleCheckboxChange('R')} />
-      <Checkbox label="G" checked={useG} onChange={handleCheckboxChange('G')} />
-      <Checkbox label="B" checked={useB} onChange={handleCheckboxChange('B')} />
+      <Checkbox
+        type="radio"
+        label="R"
+        checked={useR}
+        onChange={handleCheckboxChange('R')}
+      />
+      <Checkbox
+        type="radio"
+        label="G"
+        checked={useG}
+        onChange={handleCheckboxChange('G')}
+      />
+      <Checkbox
+        type="radio"
+        label="B"
+        checked={useB}
+        onChange={handleCheckboxChange('B')}
+      />
     </Viewer>
   );
 }
