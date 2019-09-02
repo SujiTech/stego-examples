@@ -72,18 +72,24 @@ function BlockViewer({ width, height, res, ims }: CanvasProps) {
   return (
     <Viewer title="Block">
       <Canvas width={width} height={height} ref={canvasRef} />
-      <div style={{ display: 'flex' }}>
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
         <input
           ref={sizeRef}
           type="range"
-          min="4"
+          min="2"
           max={Math.min(width, height)}
           onChange={handleSizeChange}
         />
         <span>
-          {width}*{height} / {size}*{size} / {total} blocks / {total * 3} bits /{' '}
-          {(total * 3) / 8} bytes
+          {width}*{height}
         </span>
+        <span>
+          {' '}
+          {size}*{size}
+        </span>
+        <span>{total} blocks</span>
+        <span>{total * 3} bits</span>
+        <span>{(total * 3) / 8} bytes</span>
       </div>
     </Viewer>
   );

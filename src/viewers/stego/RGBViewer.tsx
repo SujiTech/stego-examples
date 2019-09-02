@@ -8,17 +8,19 @@ import React, {
 import Viewer from '../../components/Viewer';
 import Canvas from '../../components/Canvas';
 import Checkbox from '../../components/Checkbox';
-import { divideIntoBlocks } from '../../stego';
+import Input from '../../components/Input';
+import { divideIntoBlocks, convertToBits } from '../../stego';
 import { CanvasProps } from '../../types';
 import FFT from '../../fft';
 
 function SteganographyViewer({ width, height, res, ims }: CanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [text, setText] = useState('');
+  const [noc, setNoc] = useState(1); // num of copies
   const [useR, setUseR] = useState(true);
-  const [useG, setUseG] = useState(false);
-  const [useB, setUseB] = useState(false);
-  const handleInputChange = useCallback((ev: ChangeEvent<HTMLInputElement>) => {
+  const [useG, setUseG] = useState(true);
+  const [useB, setUseB] = useState(true);
+  const handleTextChange = useCallback((ev: ChangeEvent<HTMLInputElement>) => {
     setText(ev.currentTarget.value);
   }, []);
   const handleCheckboxChange = useCallback(
@@ -39,107 +41,47 @@ function SteganographyViewer({ width, height, res, ims }: CanvasProps) {
     },
     [useR, useG, useB]
   );
-  const handleWriteButtonClick = useCallback(() => {}, []);
-  const handleReadButtonClick = useCallback(() => {}, []);
-
-  useEffect(() => {
-    if (!canvasRef.current || !res || !ims || !res.length || !ims.length) {
+  const handleCopiesChange = useCallback(
+    ({ currentTarget }: ChangeEvent<HTMLInputElement>) => {
+      setNoc(parseInt(currentTarget.value, 10));
+    },
+    [canvasRef, res, ims, useR, useG, useG]
+  );
+  const handleWriteButtonClick = useCallback(() => {
+    if (
+      !canvasRef.current ||
+      !res ||
+      !ims ||
+      !res.length ||
+      !ims.length ||
+      !text
+    ) {
       return;
     }
 
-    const selectedRes = (() => {
-      const channels = [];
-
-      if (useR) {
-        channels.push(res[0]);
-      }
-      if (useG) {
-        channels.push(res[1]);
-      }
-      if (useB) {
-        channels.push(res[2]);
-      }
-      return channels.map(c => c.slice());
-    })();
-    const selectedIms = (() => {
-      const channels = [];
-
-      if (useR) {
-        channels.push(ims[0]);
-      }
-      if (useG) {
-        channels.push(ims[1]);
-      }
-      if (useB) {
-        channels.push(ims[2]);
-      }
-
-      return channels.map(c => c.slice());
-    })();
-
-    selectedRes.forEach((_, index) => {
-      const re = selectedRes[index];
-      const im = selectedIms[index];
-      const reBlocks = divideIntoBlocks(width, height, 8, re);
-
-      const context = canvasRef.current.getContext('2d');
-      const imageData = context.getImageData(0, 0, width, height);
-
-      reBlocks.forEach((block, num) => {
-        const color = Math.floor(Math.random() * 255);
-
-        block.forEach(i => {
-          const index = i * 4;
-
-          imageData.data[index] = color;
-          imageData.data[index + 1] = color;
-          imageData.data[index + 2] = color;
-          imageData.data[index + 3] = 255;
-        });
-      });
-
-      // FFT.init(width);
-      // FFT.fft2d(re, im);
-
-      // let maxAmplitude = Number.NEGATIVE_INFINITY;
-      // let amplitudes: number[] = [];
-
-      // for (let i = 0; i < width * height; i += 1) {
-      //   re[i] += Math.round(Math.random() * 2000);
-      //   im[i] += Math.round(Math.random() * 20000);
-
-      //   const reVal = re[i];
-      //   const imVal = im[i];
-      //   const amplitude = Math.sqrt(reVal * reVal + imVal * imVal);
-
-      //   if (amplitude > maxAmplitude) {
-      //     maxAmplitude = amplitude + 200;
-      //   }
-      //   amplitudes.push(amplitude + 200);
-      // }
-
-      // // convert to gray range [0-256)
-      // const context = canvasRef.current.getContext('2d');
-      // const imageData = context.getImageData(0, 0, width, height);
-
-      context.clearRect(0, 0, width, height);
-      context.putImageData(imageData, 0, 0);
-
-      // // revoke
-      // FFT.ifft2d(re, im);
-    });
-  }, [canvasRef, res, ims, useR, useG, useG]);
+    console.log(convertToBits(text));
+  }, [canvasRef, res, ims, useR, useG, useG, text]);
+  const handleReadButtonClick = useCallback(() => {}, []);
 
   return (
     <Viewer title="Stego RGB">
       <Canvas width={width} height={height} ref={canvasRef} />
-      <input
+      <Input
+        label="Message:"
         type="text"
-        placeholder="Message to be written into the image"
+        placeholder="Message"
         value={text}
-        onChange={handleInputChange}
+        onChange={handleTextChange}
       />
-      <input type="number" placeholder="Number of copies" />
+      <Input
+        label="Copies:"
+        type="number"
+        min="1"
+        placeholder="Number of copies"
+        value={noc}
+        onChange={handleCopiesChange}
+      />
+
       <button onClick={handleWriteButtonClick}>Write</button>
       <button onClick={handleReadButtonClick}>Read</button>
       <Checkbox label="R" checked={useR} onChange={handleCheckboxChange('R')} />

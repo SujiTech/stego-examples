@@ -31,8 +31,8 @@ function App() {
       <Container>
         <OriginalRGBViewer width={width} height={height} res={res} ims={ims} />
         <OriginalYUVViewer width={width} height={height} res={res} ims={ims} />
-        {/* <PhaseViewer width={width} height={height} res={res} ims={ims} /> */}
-        {/* <MagnitudeViewer width={width} height={height} res={res} ims={ims} /> */}
+        <PhaseViewer width={width} height={height} res={res} ims={ims} />
+        <MagnitudeViewer width={width} height={height} res={res} ims={ims} />
         <BlockViewer width={width} height={height} res={res} ims={ims} />
       </Container>
     </>
