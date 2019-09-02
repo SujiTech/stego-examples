@@ -7,7 +7,8 @@ import OriginalRGBViewer from './viewers/original/RGBViewer';
 import OriginalYUVViewer from './viewers/original/YUVViewer';
 import PhaseViewer from './viewers/PhaseViewer';
 import MagnitudeViewer from './viewers/MagnitudeViewer';
-import SteganographyViewer from './viewers/stego/RGBViewer';
+import SteganographyRGBViewer from './viewers/stego/RGBViewer';
+import SteganographyHUVViewer from './viewers/stego/HUVViewer';
 
 function App() {
   const WIDTH = 256;
@@ -28,7 +29,8 @@ function App() {
       <OriginalYUVViewer width={256} height={256} res={res} ims={ims} />
       <PhaseViewer width={256} height={256} res={res} ims={ims} />
       <MagnitudeViewer width={256} height={256} res={res} ims={ims} />
-      <SteganographyViewer width={256} height={256} res={res} ims={ims} />
+      <SteganographyRGBViewer width={256} height={256} res={res} ims={ims} />
+      <SteganographyHUVViewer width={256} height={256} res={res} ims={ims} />
     </Container>
   );
 }

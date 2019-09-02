@@ -14,29 +14,29 @@ import FFT from '../../fft';
 function SteganographyViewer({ width, height, res, ims }: CanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [text, setText] = useState('');
-  const [useR, setUseR] = useState(true);
-  const [useG, setUseG] = useState(false);
-  const [useB, setUseB] = useState(false);
+  const [useY, setUseY] = useState(false);
+  const [useCb, setUseCb] = useState(false);
+  const [useCr, setUseCr] = useState(false);
   const handleInputChange = useCallback((ev: ChangeEvent<HTMLInputElement>) => {
     setText(ev.currentTarget.value);
   }, []);
   const handleCheckboxChange = useCallback(
-    (channel: 'R' | 'G' | 'B' | 'Y' | 'Cb' | 'Cr') => {
+    (channel: 'Y' | 'Cb' | 'Cr') => {
       return () => {
         switch (channel) {
-          case 'R':
-            setUseR(!useR);
+          case 'Y':
+            setUseY(!useY);
             break;
-          case 'G':
-            setUseG(!useG);
+          case 'Cr':
+            setUseCr(!useCr);
             break;
-          case 'B':
-            setUseB(!useB);
+          case 'Cb':
+            setUseCb(!useCb);
             break;
         }
       };
     },
-    [useR, useG, useB]
+    [useY, useCb, useCr]
   );
 
   useEffect(() => {
@@ -47,28 +47,28 @@ function SteganographyViewer({ width, height, res, ims }: CanvasProps) {
     const selectedRes = (() => {
       const channels = [];
 
-      if (useR) {
-        channels.push(res[0]);
+      if (useY) {
+        channels.push(res[3]);
       }
-      if (useG) {
-        channels.push(res[1]);
+      if (useCb) {
+        channels.push(res[4]);
       }
-      if (useB) {
-        channels.push(res[2]);
+      if (useCr) {
+        channels.push(res[5]);
       }
       return channels.map(c => c.slice());
     })();
     const selectedIms = (() => {
       const channels = [];
 
-      if (useR) {
-        channels.push(ims[0]);
+      if (useY) {
+        channels.push(res[3]);
       }
-      if (useG) {
-        channels.push(ims[1]);
+      if (useCb) {
+        channels.push(res[4]);
       }
-      if (useB) {
-        channels.push(ims[2]);
+      if (useCr) {
+        channels.push(res[5]);
       }
 
       return channels.map(c => c.slice());
@@ -119,7 +119,7 @@ function SteganographyViewer({ width, height, res, ims }: CanvasProps) {
       // revoke
       FFT.ifft2d(re, im);
     });
-  }, [canvasRef, res, ims, useR, useG, useG]);
+  }, [canvasRef, res, ims, useY, useCb, useCr]);
 
   return (
     <Viewer title="Stego">
@@ -130,9 +130,17 @@ function SteganographyViewer({ width, height, res, ims }: CanvasProps) {
         value={text}
         onChange={handleInputChange}
       />
-      <Checkbox label="R" checked={useR} onChange={handleCheckboxChange('R')} />
-      <Checkbox label="G" checked={useG} onChange={handleCheckboxChange('G')} />
-      <Checkbox label="B" checked={useB} onChange={handleCheckboxChange('B')} />
+      <Checkbox label="Y" checked={useY} onChange={handleCheckboxChange('Y')} />
+      <Checkbox
+        label="Cb"
+        checked={useCb}
+        onChange={handleCheckboxChange('Cb')}
+      />
+      <Checkbox
+        label="Cr"
+        checked={useCr}
+        onChange={handleCheckboxChange('Cr')}
+      />
     </Viewer>
   );
 }
