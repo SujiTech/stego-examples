@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import ReactDOM from 'react-dom';
 import Container from './components/Container';
 import SteganographyRGBViewer from './viewers/stego/RGBViewer';
-import SteganographyHUVViewer from './viewers/stego/HUVViewer';
+import SteganographyYUVViewer from './viewers/stego/YUVViewer';
 import Picker, { PickerData } from './components/Picker';
 
 function App() {
@@ -30,7 +30,7 @@ function App() {
           res={res}
           ims={ims}
         />
-        <SteganographyHUVViewer
+        <SteganographyYUVViewer
           width={width}
           height={height}
           res={res}

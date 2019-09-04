@@ -20,3 +20,9 @@ declare module 'ml-fft' {
 
   export default FFT;
 }
+
+declare module 'dct' {
+  function DCT(bits: number[]): number[];
+
+  export default DCT;
+}
