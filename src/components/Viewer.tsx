@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import { FunctionComponent } from 'react';
 
 const Container = styled.div`
-  margin: 0;
+  margin: 0 5px;
   display: flex;
   flex-direction: column;
 `;

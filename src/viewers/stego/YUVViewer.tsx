@@ -9,13 +9,7 @@ import Viewer from '../../components/Viewer';
 import Canvas from '../../components/Canvas';
 import Checkbox from '../../components/Checkbox';
 import Input from '../../components/Input';
-import {
-  divideBlocks,
-  str2bits,
-  setBit,
-  setImage,
-  getBit,
-} from '../../stego';
+import { divideBlocks, str2bits, setBit, setImage, getBit } from '../../stego';
 import { CanvasProps } from '../../types';
 import { yuv2rgb } from '../../helpers';
 
@@ -100,9 +94,9 @@ function SteganographyViewer({ width, height, res, ims }: CanvasProps) {
       const vReBlock = vReBlocks[i];
       const vImBlock = vImBlocks[i];
 
-      setBit(yReBlock, yImBlock, bits.slice(j++, BITS_PER_BLOCK), sob, sot);
-      setBit(uReBlock, uImBlock, bits.slice(j++, BITS_PER_BLOCK), sob, sot);
-      setBit(vReBlock, vImBlock, bits.slice(j++, BITS_PER_BLOCK), sob, sot);
+      setBit(yReBlock, yImBlock, bits.slice(j++, BITS_PER_BLOCK), i, sob, sot);
+      setBit(uReBlock, uImBlock, bits.slice(j++, BITS_PER_BLOCK), i, sob, sot);
+      setBit(vReBlock, vImBlock, bits.slice(j++, BITS_PER_BLOCK), i, sob, sot);
     }
 
     for (let i = 0; i < yReBlocks.length; i += 1) {
@@ -139,19 +133,19 @@ function SteganographyViewer({ width, height, res, ims }: CanvasProps) {
         const rReBlock = yReBlocks[i];
         const rImBlock = yImBlocks[i];
 
-        bits.push(getBit(rReBlock, rImBlock, sob, sot));
+        bits.push(getBit(rReBlock, rImBlock, i, sob, sot));
       }
       if (useU) {
         const gReBlock = uReBlocks[i];
         const gImBlock = uImBlocks[i];
 
-        bits.push(getBit(gReBlock, gImBlock, sob, sot));
+        bits.push(getBit(gReBlock, gImBlock, i, sob, sot));
       }
       if (useV) {
         const bReBlock = vReBlocks[i];
         const bImBlock = vImBlocks[i];
 
-        bits.push(getBit(bReBlock, bImBlock, sob, sot));
+        bits.push(getBit(bReBlock, bImBlock, i, sob, sot));
       }
     }
 

@@ -16,14 +16,15 @@ import {
   getBit,
   bits2str,
   generateBits,
+  writeBits,
 } from '../../stego';
 import { CanvasProps } from '../../types';
 
 function RGBViewer({ width, height, res, ims }: CanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [text, setText] = useState('');
+  const [text, setText] = useState('hello');
   const [error, setError] = useState('');
-  const [noc, setNoc] = useState(0); // num of copies
+  const [noc, setNoc] = useState(5); // num of copies
   const [sob, setSob] = useState(8); // size of blocks
   const [sot, setSot] = useState(16); // size of tolerance
 
@@ -50,12 +51,18 @@ function RGBViewer({ width, height, res, ims }: CanvasProps) {
   );
 
   const handleWriteButtonClick = useCallback(() => {
+    setError('');
+
     if (!canvasRef.current || !res || !ims || !res.length || !ims.length) {
       setError('pls choose an image');
       return;
     }
     if (!text) {
       setError('pls enter a message');
+      return;
+    }
+    if (noc < 1) {
+      setError('at least one copy');
       return;
     }
 
@@ -66,12 +73,23 @@ function RGBViewer({ width, height, res, ims }: CanvasProps) {
     const gImBlocks = divideBlocks(width, height, sob, ims[1]);
     const bImBlocks = divideBlocks(width, height, sob, ims[2]);
 
+    const messageBits = str2bits(text, noc);
+
+    if (messageBits.length + 24 > rReBlocks.length * 3) {
+      setError('shrink message or reduce copies');
+      return;
+    }
+
     let j = 0;
-    const bits = generateBits(rReBlocks.length, str2bits(text));
+    const bits = writeBits(
+      generateBits(rReBlocks.length * 3),
+      messageBits, // message
+      generateBits(8 * noc).fill(1) // end of message
+    );
     const context = canvasRef.current.getContext('2d');
     const imageData = context.getImageData(0, 0, width, height);
 
-    for (let i = 0; i < rReBlocks.length && j < bits.length; i += 1) {
+    for (let i = 0; i < rReBlocks.length; i += 1) {
       setBit(rReBlocks[i], rImBlocks[i], bits.slice(j, j + 1), i, sob, sot);
       setImage(rReBlocks[i], imageData, i, sob, 0);
       j += 1;
@@ -110,7 +128,7 @@ function RGBViewer({ width, height, res, ims }: CanvasProps) {
     }
 
     // update text
-    setText(bits2str(bits));
+    setText(bits2str(bits, noc));
 
     // draw
     const context = canvasRef.current.getContext('2d');

@@ -1,5 +1,10 @@
 import FFT from '../fft';
 
+export function getIndexOfBlock(size: number) {
+  // return (size * size) / 2;
+  return 0;
+}
+
 export function divideBlocks(
   width: number,
   height: number,
@@ -29,60 +34,92 @@ export function divideBlocks(
   return blocks;
 }
 
-export function str2bits(text: string): number[] {
-  return text.split('').reduce(
-    (acc: number[], c) =>
-      [
-        ...acc,
-        ...encodeURI(c)
-          .split('')
-          .map(p => {
-            const rtn: number[] = [];
-            let reminder = 0;
-            let code = p.charCodeAt(0);
+export function str2bits(text: string, copies: number): number[] {
+  return text
+    .split('')
+    .reduce(
+      (acc: number[], c) =>
+        [
+          ...acc,
+          ...encodeURI(c)
+            .split('')
+            .map(p => {
+              const rtn: number[] = [];
+              let reminder = 0;
+              let code = p.charCodeAt(0);
 
-            do {
-              reminder = code % 2;
-              rtn.push(reminder);
-              code = code - Math.floor(code / 2) - reminder;
-            } while (code > 1);
-            rtn.push(code);
-            while (rtn.length < 8) {
-              rtn.push(0);
-            }
-            return rtn.reverse();
-          }),
-      ].flat(),
-    []
-  );
+              do {
+                reminder = code % 2;
+                rtn.push(reminder);
+                code = code - Math.floor(code / 2) - reminder;
+              } while (code > 1);
+              rtn.push(code);
+              while (rtn.length < 8) {
+                rtn.push(0);
+              }
+              return rtn.reverse();
+            }),
+        ].flat(),
+      []
+    )
+    .reduce((acc, b) => {
+      for (let i = 0; i < copies; i += 1) {
+        acc.push(b);
+      }
+      return acc;
+    }, []);
 }
 
-export function bits2str(bits: number[]) {
+export function bits2str(bits: number[], copies: number) {
   let k = 128;
-  const chars = [];
+  let temp = 0;
+  const chars: string[] = [];
+  const candidates: number[] = [];
+  const elect = () =>
+    candidates.filter(c => c === 1).length >= copies / 2 ? 1 : 0;
 
-  for (let i = 0; i < bits.length; i += 8) {
-    let temp = 0;
+  for (let i = 0; i < bits.length; i += 1) {
+    candidates.push(bits[i]);
 
-    for (let j = 0; j < 8; j += 1, k /= 2) {
-      temp += bits[i + j] * k;
+    if (candidates.length === copies) {
+      temp += elect() * k;
+      k /= 2;
+      candidates.length = 0;
+
+      // end of message
+      if (temp === 255) {
+        break;
+      }
+      if (k < 1) {
+        chars.push(String.fromCharCode(temp));
+        temp = 0;
+        k = 128;
+      }
     }
-    k = 128;
-    chars.push(String.fromCharCode(temp));
   }
-  return chars.join('');
+  return unescape(chars.join(''));
 }
 
-export function generateBits(length: number, givenBits: number[]) {
+export function generateBits(length: number) {
   const bits = Array.from(new Array(length));
 
   for (let i = 0; i < length; i += 1) {
     bits[i] = Math.floor(Math.random() * 2);
   }
-  for (let j = 0; j < givenBits.length; j += 1) {
-    bits[j] = givenBits[j];
-  }
   return bits;
+}
+
+export function writeBits(dest: number[], ...source: number[][]) {
+  let k = 0;
+
+  for (let i = 0; i < source.length; i += 1) {
+    const bits = source[i];
+
+    for (let j = 0; j < bits.length && k < dest.length; j += 1, k += 1) {
+      dest[k] = bits[j];
+    }
+  }
+  return dest;
 }
 
 export function setBit(
@@ -96,9 +133,7 @@ export function setBit(
   FFT.init(size);
   FFT.fft1d(reBlock, imBlock);
 
-  const i = 0;
-  // const i = Math.floor((size * size) / 2);
-  // const i = 0;
+  const i = getIndexOfBlock(size);
   const v = Math.floor(reBlock[i] / tolerance);
 
   if (bit[0]) {
@@ -117,22 +152,18 @@ export function getBit(
   size: number,
   tolerance: number
 ) {
-  const i = 0;
-  // const i = Math.floor((size * size) / 2);
-  // const i = 0;
-
   FFT.init(size);
   FFT.fft1d(reBlock, imBlock);
-  return Math.round(reBlock[i] / tolerance) % 2;
+  return Math.round(reBlock[getIndexOfBlock(size)] / tolerance) % 2;
 }
 
 function clamp(v: number, min: number, max: number) {
   if (v < min) {
-    console.log('clamp min');
+    console.warn('clamp min');
     return min;
   }
   if (v > max) {
-    console.log('clamp max');
+    console.warn('clamp max');
     return max;
   }
   return v;
@@ -146,7 +177,7 @@ export function setImage(
   offset: number
 ) {
   // const complement = block.reduce((acc, i) => (i > acc ? i : acc), 0) - 255;
-  const max = block.reduce((acc, i) => (i > acc ? i : acc), 0);
+  // const max = block.reduce((acc, i) => (i > acc ? i : acc), 0);
   const { width } = imageData;
   const h1 = Math.floor(index / Math.floor(width / size)) * size;
   const w1 = (index % Math.floor(width / size)) * size;
@@ -155,14 +186,15 @@ export function setImage(
     const h2 = Math.floor(i / size);
     const w2 = i % size;
 
-    imageData.data[((h1 + h2) * width + w1 + w2) * 4 + offset] = Math.round(
-      (block[i] * 255) / max
-    );
     imageData.data[((h1 + h2) * width + w1 + w2) * 4 + offset] = clamp(
       Math.round(block[i]),
       0,
       255
     );
+    // imageData.data[((h1 + h2) * width + w1 + w2) * 4 + offset] = Math.round(
+    //   (block[i] * 255) / max
+    // );
+    // imageData.data[((h1 + h2) * width + w1 + w2) * 4 + offset] = 255;
     // imageData.data[((h1 + h2) * width + w1 + w2) * 4 + offset] =
     //   complement > 0 ? block[i] - complement : block[i];
   }
