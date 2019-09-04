@@ -1,7 +1,8 @@
 import FFT from '../fft';
+import { hashCode } from '../helpers';
 
 export function getIndexOfBlock(size: number) {
-  // return (size * size) / 2;
+  // return (size * size) / 2 + size / 2;
   return 0;
 }
 
@@ -109,17 +110,45 @@ export function generateBits(length: number) {
   return bits;
 }
 
+export function readBits(dest: number[]) {
+  const bits: number[] = [];
+  const inArray: number[] = [];
+  let index;
+  let code = 643575433;
+
+  for (let i = 0; i < dest.length; i += 1) {
+    [index, code] = hashCode(code, dest.length, inArray);
+    bits.push(dest[index]);
+  }
+  return bits;
+}
+
 export function writeBits(dest: number[], ...source: number[][]) {
-  let k = 0;
+  const inArray: number[] = [];
+  let index;
+  let code = 643575433;
 
   for (let i = 0; i < source.length; i += 1) {
     const bits = source[i];
 
-    for (let j = 0; j < bits.length && k < dest.length; j += 1, k += 1) {
-      dest[k] = bits[j];
+    for (let j = 0; j < bits.length; j += 1) {
+      [index, code] = hashCode(code, bits.length, inArray);
+      dest[index] = bits[j];
     }
   }
   return dest;
+}
+
+export function getBit(
+  reBlock: number[],
+  imBlock: number[],
+  index: number,
+  size: number,
+  tolerance: number
+) {
+  FFT.init(size);
+  FFT.fft1d(reBlock, imBlock);
+  return Math.round(reBlock[getIndexOfBlock(size)] / tolerance) % 2;
 }
 
 export function setBit(
@@ -143,18 +172,6 @@ export function setBit(
   }
   FFT.ifft1d(reBlock, imBlock);
   return reBlock[i];
-}
-
-export function getBit(
-  reBlock: number[],
-  imBlock: number[],
-  index: number,
-  size: number,
-  tolerance: number
-) {
-  FFT.init(size);
-  FFT.fft1d(reBlock, imBlock);
-  return Math.round(reBlock[getIndexOfBlock(size)] / tolerance) % 2;
 }
 
 function clamp(v: number, min: number, max: number) {

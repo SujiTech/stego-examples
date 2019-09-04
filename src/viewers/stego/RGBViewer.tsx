@@ -17,6 +17,7 @@ import {
   bits2str,
   generateBits,
   writeBits,
+  readBits,
 } from '../../stego';
 import { CanvasProps } from '../../types';
 
@@ -128,7 +129,7 @@ function RGBViewer({ width, height, res, ims }: CanvasProps) {
     }
 
     // update text
-    setText(bits2str(bits, noc));
+    setText(bits2str(readBits(bits), noc));
 
     // draw
     const context = canvasRef.current.getContext('2d');

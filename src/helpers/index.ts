@@ -17,3 +17,59 @@ export function yuv2rgb(y: number, cb: number, cr: number) {
     y + 1.779 * (cb - 128),
   ];
 }
+
+// more:
+// https://gist.github.com/iSWORD/13f715370e56703f6c973b6dd706bbbd
+
+export function shuffle(
+  nums: number[],
+  seed: number[],
+  unshuffle: boolean = false
+) {
+  const len = nums.length;
+  const swap = (a: number, b: number) =>
+    ([nums[a], nums[b]] = [nums[b], nums[a]]);
+
+  for (
+    let i = unshuffle ? len - 1 : 0;
+    (unshuffle && i >= 0) || (!unshuffle && i < len);
+    i += unshuffle ? -1 : 1
+  ) {
+    swap(seed[i % seed.length] % len, i);
+  }
+}
+
+export function unshuffle<T>(nums: number[], seed: number[]) {
+  return shuffle(nums, seed, true);
+}
+
+// more:
+// https://werxltd.com/wp/2010/05/13/javascript-implementation-of-javas-string-hashcode-method/
+
+export function hash(input: number) {
+  const str = String(input);
+  const len = str.length;
+  let code = 0;
+
+  if (len === 0) return code;
+  for (let i = 0; i < len; i += 1) {
+    const char = str.charCodeAt(i);
+
+    code = (code << 5) - code + char;
+    code = code & code; // Convert to 32bit integer
+  }
+  return code;
+}
+
+export function hashCode(previousCode: number, mod: number, inArray: number[]) {
+  let prob = 1;
+  let code = hash(previousCode);
+  let index = Math.abs(code) % mod;
+
+  while (inArray[index]) {
+    index = (index + prob * prob) % mod;
+    prob = prob > mod / 2 ? 1 : prob + 1;
+  }
+  inArray[index] = 1;
+  return [index, code];
+}
