@@ -1,6 +1,6 @@
 import FFT from '../fft';
 
-export function divideIntoBlocks(
+export function divideBlocks(
   width: number,
   height: number,
   size: number,
@@ -73,11 +73,14 @@ export function bits2str(bits: number[]) {
   return chars.join('');
 }
 
-export function generateRandomBits(length: number) {
-  const bits = Array.from(new Array(length)).fill(false);
+export function generateBits(length: number, givenBits: number[]) {
+  const bits = Array.from(new Array(length));
 
-  for (let i = 0; i < length / 2; i += 1) {
+  for (let i = 0; i < length; i += 1) {
     bits[i] = Math.floor(Math.random() * 2);
+  }
+  for (let j = 0; j < givenBits.length; j += 1) {
+    bits[j] = givenBits[j];
   }
   return bits;
 }

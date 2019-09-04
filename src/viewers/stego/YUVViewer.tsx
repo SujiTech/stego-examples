@@ -10,7 +10,7 @@ import Canvas from '../../components/Canvas';
 import Checkbox from '../../components/Checkbox';
 import Input from '../../components/Input';
 import {
-  divideIntoBlocks,
+  divideBlocks,
   str2bits,
   setBit,
   setImage,
@@ -82,12 +82,12 @@ function SteganographyViewer({ width, height, res, ims }: CanvasProps) {
     const context = canvasRef.current.getContext('2d');
     const imageData = context.getImageData(0, 0, width, height);
     const bits = str2bits(text);
-    const yReBlocks = divideIntoBlocks(width, height, sob, res[3]);
-    const uReBlocks = divideIntoBlocks(width, height, sob, res[4]);
-    const vReBlocks = divideIntoBlocks(width, height, sob, res[5]);
-    const yImBlocks = divideIntoBlocks(width, height, sob, ims[3]);
-    const uImBlocks = divideIntoBlocks(width, height, sob, ims[4]);
-    const vImBlocks = divideIntoBlocks(width, height, sob, ims[5]);
+    const yReBlocks = divideBlocks(width, height, sob, res[3]);
+    const uReBlocks = divideBlocks(width, height, sob, res[4]);
+    const vReBlocks = divideBlocks(width, height, sob, res[5]);
+    const yImBlocks = divideBlocks(width, height, sob, ims[3]);
+    const uImBlocks = divideBlocks(width, height, sob, ims[4]);
+    const vImBlocks = divideBlocks(width, height, sob, ims[5]);
 
     let j = 0;
     const BITS_PER_BLOCK = 1;
@@ -124,12 +124,12 @@ function SteganographyViewer({ width, height, res, ims }: CanvasProps) {
     const context = canvasRef.current.getContext('2d');
     const imageData = context.getImageData(0, 0, width, height);
 
-    const yReBlocks = divideIntoBlocks(width, height, sob, res[0]);
-    const uReBlocks = divideIntoBlocks(width, height, sob, res[1]);
-    const vReBlocks = divideIntoBlocks(width, height, sob, res[2]);
-    const yImBlocks = divideIntoBlocks(width, height, sob, ims[0]);
-    const uImBlocks = divideIntoBlocks(width, height, sob, ims[1]);
-    const vImBlocks = divideIntoBlocks(width, height, sob, ims[2]);
+    const yReBlocks = divideBlocks(width, height, sob, res[0]);
+    const uReBlocks = divideBlocks(width, height, sob, res[1]);
+    const vReBlocks = divideBlocks(width, height, sob, res[2]);
+    const yImBlocks = divideBlocks(width, height, sob, ims[0]);
+    const uImBlocks = divideBlocks(width, height, sob, ims[1]);
+    const vImBlocks = divideBlocks(width, height, sob, ims[2]);
 
     let bits = [];
     const BITS_PER_BLOCK = 1;

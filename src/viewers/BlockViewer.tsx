@@ -7,7 +7,7 @@ import React, {
 } from 'react';
 import Viewer from '../components/Viewer';
 import Canvas from '../components/Canvas';
-import { divideIntoBlocks } from '../stego';
+import { divideBlocks } from '../stego';
 import { CanvasProps } from '../types';
 
 function BlockViewer({ width, height, res, ims }: CanvasProps) {

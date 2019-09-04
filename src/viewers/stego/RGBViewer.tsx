@@ -9,12 +9,13 @@ import Viewer from '../../components/Viewer';
 import Canvas from '../../components/Canvas';
 import Input from '../../components/Input';
 import {
-  divideIntoBlocks,
+  divideBlocks,
   str2bits,
   setBit,
   setImage,
   getBit,
   bits2str,
+  generateBits,
 } from '../../stego';
 import { CanvasProps } from '../../types';
 
@@ -25,6 +26,7 @@ function RGBViewer({ width, height, res, ims }: CanvasProps) {
   const [noc, setNoc] = useState(0); // num of copies
   const [sob, setSob] = useState(8); // size of blocks
   const [sot, setSot] = useState(16); // size of tolerance
+
   const handleTextChange = useCallback((ev: ChangeEvent<HTMLInputElement>) => {
     setText(ev.currentTarget.value);
   }, []);
@@ -46,6 +48,7 @@ function RGBViewer({ width, height, res, ims }: CanvasProps) {
     },
     []
   );
+
   const handleWriteButtonClick = useCallback(() => {
     if (!canvasRef.current || !res || !ims || !res.length || !ims.length) {
       setError('pls choose an image');
@@ -56,15 +59,15 @@ function RGBViewer({ width, height, res, ims }: CanvasProps) {
       return;
     }
 
-    const rReBlocks = divideIntoBlocks(width, height, sob, res[0]);
-    const gReBlocks = divideIntoBlocks(width, height, sob, res[1]);
-    const bReBlocks = divideIntoBlocks(width, height, sob, res[2]);
-    const rImBlocks = divideIntoBlocks(width, height, sob, ims[0]);
-    const gImBlocks = divideIntoBlocks(width, height, sob, ims[1]);
-    const bImBlocks = divideIntoBlocks(width, height, sob, ims[2]);
+    const rReBlocks = divideBlocks(width, height, sob, res[0]);
+    const gReBlocks = divideBlocks(width, height, sob, res[1]);
+    const bReBlocks = divideBlocks(width, height, sob, res[2]);
+    const rImBlocks = divideBlocks(width, height, sob, ims[0]);
+    const gImBlocks = divideBlocks(width, height, sob, ims[1]);
+    const bImBlocks = divideBlocks(width, height, sob, ims[2]);
 
     let j = 0;
-    const bits = str2bits(text);
+    const bits = generateBits(rReBlocks.length, str2bits(text));
     const context = canvasRef.current.getContext('2d');
     const imageData = context.getImageData(0, 0, width, height);
 
@@ -85,17 +88,18 @@ function RGBViewer({ width, height, res, ims }: CanvasProps) {
     // draw
     context.putImageData(imageData, 0, 0);
   }, [canvasRef, res, ims, text, noc, sob, sot]);
+
   const handleReadButtonClick = useCallback(() => {
     if (!canvasRef.current || !res || !ims || !res.length || !ims.length) {
       return;
     }
 
-    const rReBlocks = divideIntoBlocks(width, height, sob, res[0]);
-    const gReBlocks = divideIntoBlocks(width, height, sob, res[1]);
-    const bReBlocks = divideIntoBlocks(width, height, sob, res[2]);
-    const rImBlocks = divideIntoBlocks(width, height, sob, ims[0]);
-    const gImBlocks = divideIntoBlocks(width, height, sob, ims[1]);
-    const bImBlocks = divideIntoBlocks(width, height, sob, ims[2]);
+    const rReBlocks = divideBlocks(width, height, sob, res[0]);
+    const gReBlocks = divideBlocks(width, height, sob, res[1]);
+    const bReBlocks = divideBlocks(width, height, sob, res[2]);
+    const rImBlocks = divideBlocks(width, height, sob, ims[0]);
+    const gImBlocks = divideBlocks(width, height, sob, ims[1]);
+    const bImBlocks = divideBlocks(width, height, sob, ims[2]);
 
     const bits = [];
 
