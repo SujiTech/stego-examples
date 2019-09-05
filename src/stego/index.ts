@@ -8,8 +8,9 @@ export enum TrasnformAlgorithm {
 }
 
 export function getIndexOfBlock(size: number) {
-  return (size * size) / 2 + size / 2;
-  // return 0;
+  return (size * size) / 2 + size / 2; // center
+  // return 0; // left-top corner
+  // return size * size - 1; // right-bottom corner
 }
 
 export function divideBlocks(
