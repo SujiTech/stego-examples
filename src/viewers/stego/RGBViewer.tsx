@@ -16,8 +16,8 @@ import {
   getBit,
   bits2str,
   generateBits,
-  writeBits,
   readBits,
+  mergeBits,
 } from '../../stego';
 import { CanvasProps } from '../../types';
 
@@ -76,17 +76,18 @@ function RGBViewer({ width, height, res, ims }: CanvasProps) {
 
     const messageBits = str2bits(text, noc);
 
-    if (messageBits.length + 24 > rReBlocks.length * 3) {
+    if (messageBits.length + 8 * noc > rReBlocks.length * 3) {
       setError('shrink message or reduce copies');
       return;
     }
 
     let j = 0;
-    const bits = writeBits(
+    const bits = mergeBits(
       generateBits(rReBlocks.length * 3),
       messageBits, // message
       generateBits(8 * noc).fill(1) // end of message
     );
+
     const context = canvasRef.current.getContext('2d');
     const imageData = context.getImageData(0, 0, width, height);
 
@@ -129,7 +130,7 @@ function RGBViewer({ width, height, res, ims }: CanvasProps) {
     }
 
     // update text
-    setText(bits2str(readBits(bits), noc));
+    setText(bits2str(bits, noc));
 
     // draw
     const context = canvasRef.current.getContext('2d');

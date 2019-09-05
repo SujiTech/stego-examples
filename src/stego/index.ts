@@ -2,8 +2,8 @@ import FFT from '../fft';
 import { hashCode } from '../helpers';
 
 export function getIndexOfBlock(size: number) {
-  // return (size * size) / 2 + size / 2;
-  return 0;
+  return (size * size) / 2 + size / 2;
+  // return 0;
 }
 
 export function divideBlocks(
@@ -132,8 +132,21 @@ export function writeBits(dest: number[], ...source: number[][]) {
     const bits = source[i];
 
     for (let j = 0; j < bits.length; j += 1) {
-      [index, code] = hashCode(code, bits.length, inArray);
+      [index, code] = hashCode(code, dest.length, inArray);
       dest[index] = bits[j];
+    }
+  }
+  return dest;
+}
+
+export function mergeBits(dest: number[], ...source: number[][]) {
+  let k = 0;
+
+  for (let i = 0; i < source.length; i += 1) {
+    const bits = source[i];
+
+    for (let j = 0; j < bits.length && k < dest.length; j += 1, k += 1) {
+      dest[k] = bits[j];
     }
   }
   return dest;
