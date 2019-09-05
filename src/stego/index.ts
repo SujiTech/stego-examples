@@ -1,13 +1,33 @@
 import FFT from '../fft';
 import { fastDct8 } from '../fast-dct';
-import { hashCode } from '../helpers';
+import { hashCode, rgb2yuv } from '../helpers';
 
 export enum TrasnformAlgorithm {
   FDCT8,
   FFT1D,
 }
 
-export function getIndexOfBlock(size: number) {
+export function yuvBlocks(b1: number[], b2: number[], b3: number[]) {
+  for (let i = 0; i < b1.length; i += 1) {
+    const r = b1[i];
+    const g = b2[i];
+    const b = b3[i];
+
+    [b1[i], b2[i], b3[i]] = rgb2yuv(r, g, b);
+  }
+}
+
+export function rgbBlocks(b1: number[], b2: number[], b3: number[]) {
+  for (let i = 0; i < b1.length; i += 1) {
+    const y = b1[i];
+    const u = b2[i];
+    const v = b3[i];
+
+    [b1[i], b2[i], b3[i]] = rgb2yuv(y, u, v);
+  }
+}
+
+export function getIndexOfSize(size: number) {
   return (size * size) / 2 + size / 2; // center
   // return 0; // left-top corner
   // return size * size - 1; // right-bottom corner
@@ -117,19 +137,6 @@ export function generateBits(length: number) {
   return bits;
 }
 
-export function readBits(dest: number[]) {
-  const bits: number[] = [];
-  const inArray: number[] = [];
-  let index;
-  let code = 643575433;
-
-  for (let i = 0; i < dest.length; i += 1) {
-    [index, code] = hashCode(code, dest.length, inArray);
-    bits.push(dest[index]);
-  }
-  return bits;
-}
-
 export function writeBits(dest: number[], ...source: number[][]) {
   const inArray: number[] = [];
   let index;
@@ -144,6 +151,19 @@ export function writeBits(dest: number[], ...source: number[][]) {
     }
   }
   return dest;
+}
+
+export function readBits(dest: number[]) {
+  const bits: number[] = [];
+  const inArray: number[] = [];
+  let index;
+  let code = 643575433;
+
+  for (let i = 0; i < dest.length; i += 1) {
+    [index, code] = hashCode(code, dest.length, inArray);
+    bits.push(dest[index]);
+  }
+  return bits;
 }
 
 export function mergeBits(dest: number[], ...source: number[][]) {
@@ -168,7 +188,7 @@ export function getBit(
   algorithm: TrasnformAlgorithm
 ) {
   transform(reBlock, imBlock, algorithm, size);
-  return Math.round(reBlock[getIndexOfBlock(size)] / tolerance) % 2;
+  return Math.round(reBlock[getIndexOfSize(size)] / tolerance) % 2;
 }
 
 export function setBit(
@@ -182,7 +202,7 @@ export function setBit(
 ) {
   transform(reBlock, imBlock, algorithm, size);
 
-  const i = getIndexOfBlock(size);
+  const i = getIndexOfSize(size);
   const v = Math.floor(reBlock[i] / tolerance);
 
   if (bit[0]) {

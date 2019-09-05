@@ -30,9 +30,12 @@ function RGBViewer({ width, height, res, ims }: CanvasProps) {
   const [sob, setSob] = useState(8); // size of blocks
   const [sot, setSot] = useState(16); // size of tolerance
 
-  const handleTextChange = useCallback((ev: ChangeEvent<HTMLInputElement>) => {
-    setText(ev.currentTarget.value);
-  }, []);
+  const handleTextChange = useCallback(
+    ({ currentTarget }: ChangeEvent<HTMLInputElement>) => {
+      setText(currentTarget.value);
+    },
+    []
+  );
   const handleCopiesChange = useCallback(
     ({ currentTarget }: ChangeEvent<HTMLInputElement>) => {
       setNoc(parseInt(currentTarget.value, 10));
@@ -82,7 +85,6 @@ function RGBViewer({ width, height, res, ims }: CanvasProps) {
       return;
     }
 
-    let j = 0;
     const bits = mergeBits(
       generateBits(rReBlocks.length * 3),
       messageBits, // message
@@ -91,6 +93,8 @@ function RGBViewer({ width, height, res, ims }: CanvasProps) {
 
     const context = canvasRef.current.getContext('2d');
     const imageData = context.getImageData(0, 0, width, height);
+
+    let j = 0;
 
     for (let i = 0; i < rReBlocks.length; i += 1) {
       setBit(
@@ -183,12 +187,6 @@ function RGBViewer({ width, height, res, ims }: CanvasProps) {
 
     // update text
     setText(bits2str(bits, noc));
-
-    // draw
-    const context = canvasRef.current.getContext('2d');
-    const imageData = context.getImageData(0, 0, width, height);
-
-    context.putImageData(imageData, 0, 0);
   }, [canvasRef, res, ims, noc, sob, sot]);
 
   useEffect(() => {

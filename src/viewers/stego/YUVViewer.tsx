@@ -7,41 +7,34 @@ import React, {
 } from 'react';
 import Viewer from '../../components/Viewer';
 import Canvas from '../../components/Canvas';
-import Checkbox from '../../components/Checkbox';
 import Input from '../../components/Input';
-import { divideBlocks, str2bits, setBit, setImage, getBit } from '../../stego';
+import {
+  divideBlocks,
+  str2bits,
+  setBit,
+  setImage,
+  getBit,
+  TrasnformAlgorithm,
+  mergeBits,
+  generateBits,
+  yuvBlocks,
+  rgbBlocks,
+  bits2str,
+} from '../../stego';
 import { CanvasProps } from '../../types';
-import { yuv2rgb } from '../../helpers';
 
-function SteganographyViewer({ width, height, res, ims }: CanvasProps) {
+function YUVViewer({ width, height, res, ims }: CanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [text, setText] = useState('');
-  const [noc, setNoc] = useState(0); // num of copies
+  const [text, setText] = useState('hello');
+  const [error, setError] = useState('');
+  const [noc, setNoc] = useState(5); // num of copies
   const [sob, setSob] = useState(8); // size of blocks
   const [sot, setSot] = useState(16); // size of tolerance
-  const [useY, setUseY] = useState(true);
-  const [useU, setUseU] = useState(true);
-  const [useV, setUseV] = useState(true);
-  const handleTextChange = useCallback((ev: ChangeEvent<HTMLInputElement>) => {
-    setText(ev.currentTarget.value);
-  }, []);
-  const handleCheckboxChange = useCallback(
-    (channel: 'Y' | 'U' | 'V') => {
-      return () => {
-        switch (channel) {
-          case 'Y':
-            setUseY(!useY);
-            break;
-          case 'U':
-            setUseU(!useU);
-            break;
-          case 'V':
-            setUseV(!useV);
-            break;
-        }
-      };
+  const handleTextChange = useCallback(
+    ({ currentTarget }: ChangeEvent<HTMLInputElement>) => {
+      setText(currentTarget.value);
     },
-    [useY, useU, useV]
+    []
   );
   const handleCopiesChange = useCallback(
     ({ currentTarget }: ChangeEvent<HTMLInputElement>) => {
@@ -62,20 +55,21 @@ function SteganographyViewer({ width, height, res, ims }: CanvasProps) {
     []
   );
   const handleWriteButtonClick = useCallback(() => {
-    if (
-      !canvasRef.current ||
-      !res ||
-      !ims ||
-      !res.length ||
-      !ims.length ||
-      !text
-    ) {
+    setError('');
+
+    if (!canvasRef.current || !res || !ims || !res.length || !ims.length) {
+      setError('pls choose an image');
+      return;
+    }
+    if (!text) {
+      setError('pls enter a message');
+      return;
+    }
+    if (noc < 1) {
+      setError('at least one copy');
       return;
     }
 
-    const context = canvasRef.current.getContext('2d');
-    const imageData = context.getImageData(0, 0, width, height);
-    const bits = str2bits(text);
     const yReBlocks = divideBlocks(width, height, sob, res[3]);
     const uReBlocks = divideBlocks(width, height, sob, res[4]);
     const vReBlocks = divideBlocks(width, height, sob, res[5]);
@@ -83,40 +77,73 @@ function SteganographyViewer({ width, height, res, ims }: CanvasProps) {
     const uImBlocks = divideBlocks(width, height, sob, ims[4]);
     const vImBlocks = divideBlocks(width, height, sob, ims[5]);
 
-    let j = 0;
-    const BITS_PER_BLOCK = 1;
+    const messageBits = str2bits(text, noc);
 
-    for (let i = 0; i < yReBlocks.length && j < bits.length; i += 1) {
-      const yReBlock = yReBlocks[i];
-      const yImBlock = yImBlocks[i];
-      const uReBlock = uReBlocks[i];
-      const uImBlock = uImBlocks[i];
-      const vReBlock = vReBlocks[i];
-      const vImBlock = vImBlocks[i];
-
-      setBit(yReBlock, yImBlock, bits.slice(j++, BITS_PER_BLOCK), i, sob, sot);
-      setBit(uReBlock, uImBlock, bits.slice(j++, BITS_PER_BLOCK), i, sob, sot);
-      setBit(vReBlock, vImBlock, bits.slice(j++, BITS_PER_BLOCK), i, sob, sot);
+    if (messageBits.length + 8 * noc > yReBlocks.length * 3) {
+      setError('shrink message or reduce copies');
+      return;
     }
 
-    for (let i = 0; i < yReBlocks.length; i += 1) {
-      const y = yReBlocks[i][Math.floor((sob * sob) / 2)];
-      const u = uReBlocks[i][Math.floor((sob * sob) / 2)];
-      const v = vReBlocks[i][Math.floor((sob * sob) / 2)];
+    const bits = mergeBits(
+      generateBits(yReBlocks.length * 3),
+      messageBits,
+      generateBits(8 * noc).fill(1)
+    );
 
-      const [r, g, b] = yuv2rgb(y, u, v);
+    const context = canvasRef.current.getContext('2d');
+    const imageData = context.getImageData(0, 0, width, height);
+
+    let j = 0;
+
+    for (let i = 0; i < yReBlocks.length; i += 1) {
+      yuvBlocks(yReBlocks[i], uReBlocks[i], vReBlocks[i]); // convert rgb blocks to yuv blocks
+      setBit(
+        yReBlocks[i],
+        yImBlocks[i],
+        bits.slice(j, j + 1),
+        i,
+        sob,
+        sot,
+        TrasnformAlgorithm.FDCT8
+      );
+      j += 1;
+
+      setBit(
+        uReBlocks[i],
+        uImBlocks[i],
+        bits.slice(j, j + 1),
+        i,
+        sob,
+        sot,
+        TrasnformAlgorithm.FDCT8
+      );
+      j += 1;
+
+      setBit(
+        vReBlocks[i],
+        vImBlocks[i],
+        bits.slice(j, j + 1),
+        i,
+        sob,
+        sot,
+        TrasnformAlgorithm.FDCT8
+      );
+      j += 1;
+
+      rgbBlocks(yReBlocks[i], uReBlocks[i], vReBlocks[i]); // convert yuv blocks to rgb blocks
+      setImage(yReBlocks[i], imageData, i, sob, 0);
+      setImage(uReBlocks[i], imageData, i, sob, 1);
+      setImage(vReBlocks[i], imageData, i, sob, 2);
     }
 
     // draw
     context.putImageData(imageData, 0, 0);
-  }, [canvasRef, res, ims, useY, useU, useU, text, noc, sob, sot]);
+  }, [canvasRef, res, ims, text, noc, sob, sot]);
+
   const handleReadButtonClick = useCallback(() => {
     if (!canvasRef.current || !res || !ims || !res.length || !ims.length) {
       return;
     }
-
-    const context = canvasRef.current.getContext('2d');
-    const imageData = context.getImageData(0, 0, width, height);
 
     const yReBlocks = divideBlocks(width, height, sob, res[0]);
     const uReBlocks = divideBlocks(width, height, sob, res[1]);
@@ -125,46 +152,45 @@ function SteganographyViewer({ width, height, res, ims }: CanvasProps) {
     const uImBlocks = divideBlocks(width, height, sob, ims[1]);
     const vImBlocks = divideBlocks(width, height, sob, ims[2]);
 
-    let bits = [];
-    const BITS_PER_BLOCK = 1;
+    const bits = [];
 
     for (let i = 0; i < yReBlocks.length; i += 1) {
-      if (useY) {
-        const rReBlock = yReBlocks[i];
-        const rImBlock = yImBlocks[i];
-
-        bits.push(getBit(rReBlock, rImBlock, i, sob, sot));
-      }
-      if (useU) {
-        const gReBlock = uReBlocks[i];
-        const gImBlock = uImBlocks[i];
-
-        bits.push(getBit(gReBlock, gImBlock, i, sob, sot));
-      }
-      if (useV) {
-        const bReBlock = vReBlocks[i];
-        const bImBlock = vImBlocks[i];
-
-        bits.push(getBit(bReBlock, bImBlock, i, sob, sot));
-      }
+      yuvBlocks(yReBlocks[i], uReBlocks[i], vReBlocks[i]);
+      bits.push(
+        getBit(
+          yReBlocks[i],
+          yImBlocks[i],
+          i,
+          sob,
+          sot,
+          TrasnformAlgorithm.FDCT8
+        )
+      );
+      bits.push(
+        getBit(
+          uReBlocks[i],
+          uImBlocks[i],
+          i,
+          sob,
+          sot,
+          TrasnformAlgorithm.FDCT8
+        )
+      );
+      bits.push(
+        getBit(
+          vReBlocks[i],
+          vImBlocks[i],
+          i,
+          sob,
+          sot,
+          TrasnformAlgorithm.FDCT8
+        )
+      );
     }
 
-    let k = 128;
-    const chars = [];
-
-    for (let i = 0; i < bits.length; i += 8) {
-      let temp = 0;
-
-      for (let j = 0; j < 8; j += 1, k /= 2) {
-        temp += bits[i + j] * k;
-      }
-      k = 128;
-      chars.push(String.fromCharCode(temp));
-    }
-
-    // draw
-    context.putImageData(imageData, 0, 0);
-  }, [canvasRef, res, ims, useY, useU, useU, noc, sob, sot]);
+    // update text
+    setText(bits2str(bits, noc));
+  }, [canvasRef, res, ims, noc, sob, sot]);
 
   useEffect(() => {
     if (!canvasRef.current || !res || !ims || !res.length || !ims.length) {
@@ -186,7 +212,7 @@ function SteganographyViewer({ width, height, res, ims }: CanvasProps) {
     }
     context.clearRect(0, 0, width, height);
     context.putImageData(imageData, 0, 0);
-  }, [canvasRef, width, height, res, ims, useY, useU, useV]);
+  }, [canvasRef, width, height, res, ims]);
 
   return (
     <Viewer title="YUV">
@@ -224,11 +250,9 @@ function SteganographyViewer({ width, height, res, ims }: CanvasProps) {
       />
       <button onClick={handleWriteButtonClick}>Write</button>
       <button onClick={handleReadButtonClick}>Read</button>
-      <Checkbox label="Y" checked={useY} onChange={handleCheckboxChange('Y')} />
-      <Checkbox label="U" checked={useU} onChange={handleCheckboxChange('U')} />
-      <Checkbox label="V" checked={useV} onChange={handleCheckboxChange('V')} />
+      {error ? <span style={{ color: 'red' }}>{error}</span> : null}
     </Viewer>
   );
 }
 
-export default SteganographyViewer;
+export default YUVViewer;
