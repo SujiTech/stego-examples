@@ -1,5 +1,11 @@
 import FFT from '../fft';
+import { fastDct8 } from '../fast-dct';
 import { hashCode } from '../helpers';
+
+export enum TrasnformAlgorithm {
+  FDCT8,
+  FFT1D,
+}
 
 export function getIndexOfBlock(size: number) {
   return (size * size) / 2 + size / 2;
@@ -157,10 +163,10 @@ export function getBit(
   imBlock: number[],
   index: number,
   size: number,
-  tolerance: number
+  tolerance: number,
+  algorithm: TrasnformAlgorithm
 ) {
-  FFT.init(size);
-  FFT.fft1d(reBlock, imBlock);
+  transform(reBlock, imBlock, algorithm, size);
   return Math.round(reBlock[getIndexOfBlock(size)] / tolerance) % 2;
 }
 
@@ -170,10 +176,10 @@ export function setBit(
   bit: number[],
   index: number,
   size: number,
-  tolerance: number
+  tolerance: number,
+  algorithm: TrasnformAlgorithm
 ) {
-  FFT.init(size);
-  FFT.fft1d(reBlock, imBlock);
+  transform(reBlock, imBlock, algorithm, size);
 
   const i = getIndexOfBlock(size);
   const v = Math.floor(reBlock[i] / tolerance);
@@ -183,8 +189,44 @@ export function setBit(
   } else {
     reBlock[i] = v % 2 === 1 ? (v - 1) * tolerance : v * tolerance;
   }
-  FFT.ifft1d(reBlock, imBlock);
+  inverseTransform(reBlock, imBlock, algorithm);
   return reBlock[i];
+}
+
+function transform(
+  re: number[],
+  im: number[],
+  algorithm: TrasnformAlgorithm,
+  size: number
+) {
+  switch (algorithm) {
+    case TrasnformAlgorithm.FDCT8:
+      fastDct8.transform(re);
+      break;
+    case TrasnformAlgorithm.FFT1D:
+      FFT.init(size);
+      FFT.fft1d(re, im);
+      break;
+    default:
+      throw new Error(`unknown algorithm: ${algorithm}`);
+  }
+}
+
+function inverseTransform(
+  re: number[],
+  im: number[],
+  algorithm: TrasnformAlgorithm
+) {
+  switch (algorithm) {
+    case TrasnformAlgorithm.FDCT8:
+      fastDct8.inverseTransform(re);
+      break;
+    case TrasnformAlgorithm.FFT1D:
+      FFT.ifft1d(re, im);
+      break;
+    default:
+      throw new Error(`unknown algorithm: ${algorithm}`);
+  }
 }
 
 function clamp(v: number, min: number, max: number) {

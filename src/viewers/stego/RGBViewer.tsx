@@ -18,6 +18,7 @@ import {
   generateBits,
   readBits,
   mergeBits,
+  TrasnformAlgorithm,
 } from '../../stego';
 import { CanvasProps } from '../../types';
 
@@ -92,15 +93,39 @@ function RGBViewer({ width, height, res, ims }: CanvasProps) {
     const imageData = context.getImageData(0, 0, width, height);
 
     for (let i = 0; i < rReBlocks.length; i += 1) {
-      setBit(rReBlocks[i], rImBlocks[i], bits.slice(j, j + 1), i, sob, sot);
+      setBit(
+        rReBlocks[i],
+        rImBlocks[i],
+        bits.slice(j, j + 1),
+        i,
+        sob,
+        sot,
+        TrasnformAlgorithm.FFT1D
+      );
       setImage(rReBlocks[i], imageData, i, sob, 0);
       j += 1;
 
-      setBit(gReBlocks[i], gImBlocks[i], bits.slice(j, j + 1), i, sob, sot);
+      setBit(
+        gReBlocks[i],
+        gImBlocks[i],
+        bits.slice(j, j + 1),
+        i,
+        sob,
+        sot,
+        TrasnformAlgorithm.FFT1D
+      );
       setImage(gReBlocks[i], imageData, i, sob, 1);
       j += 1;
 
-      setBit(bReBlocks[i], bImBlocks[i], bits.slice(j, j + 1), i, sob, sot);
+      setBit(
+        bReBlocks[i],
+        bImBlocks[i],
+        bits.slice(j, j + 1),
+        i,
+        sob,
+        sot,
+        TrasnformAlgorithm.FFT1D
+      );
       setImage(bReBlocks[i], imageData, i, sob, 2);
       j += 1;
     }
@@ -124,9 +149,36 @@ function RGBViewer({ width, height, res, ims }: CanvasProps) {
     const bits = [];
 
     for (let i = 0; i < rReBlocks.length; i += 1) {
-      bits.push(getBit(rReBlocks[i], rImBlocks[i], i, sob, sot));
-      bits.push(getBit(gReBlocks[i], gImBlocks[i], i, sob, sot));
-      bits.push(getBit(bReBlocks[i], bImBlocks[i], i, sob, sot));
+      bits.push(
+        getBit(
+          rReBlocks[i],
+          rImBlocks[i],
+          i,
+          sob,
+          sot,
+          TrasnformAlgorithm.FFT1D
+        )
+      );
+      bits.push(
+        getBit(
+          gReBlocks[i],
+          gImBlocks[i],
+          i,
+          sob,
+          sot,
+          TrasnformAlgorithm.FFT1D
+        )
+      );
+      bits.push(
+        getBit(
+          bReBlocks[i],
+          bImBlocks[i],
+          i,
+          sob,
+          sot,
+          TrasnformAlgorithm.FFT1D
+        )
+      );
     }
 
     // update text
