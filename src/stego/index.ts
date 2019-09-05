@@ -98,7 +98,7 @@ export function bits2str(bits: number[], copies: number) {
       }
     }
   }
-  return unescape(chars.join(''));
+  return decodeURI(chars.join(''));
 }
 
 export function generateBits(length: number) {
