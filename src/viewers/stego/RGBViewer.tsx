@@ -16,7 +16,6 @@ import {
   getBit,
   bits2str,
   generateBits,
-  readBits,
   mergeBits,
   TrasnformAlgorithm,
 } from '../../stego';
@@ -104,7 +103,7 @@ function RGBViewer({ width, height, res, ims }: CanvasProps) {
         i,
         sob,
         sot,
-        TrasnformAlgorithm.FFT1D
+        TrasnformAlgorithm.FFT2D
       );
       setImage(rReBlocks[i], imageData, i, sob, 0);
       j += 1;
@@ -116,7 +115,7 @@ function RGBViewer({ width, height, res, ims }: CanvasProps) {
         i,
         sob,
         sot,
-        TrasnformAlgorithm.FFT1D
+        TrasnformAlgorithm.FFT2D
       );
       setImage(gReBlocks[i], imageData, i, sob, 1);
       j += 1;
@@ -128,7 +127,7 @@ function RGBViewer({ width, height, res, ims }: CanvasProps) {
         i,
         sob,
         sot,
-        TrasnformAlgorithm.FFT1D
+        TrasnformAlgorithm.FFT2D
       );
       setImage(bReBlocks[i], imageData, i, sob, 2);
       j += 1;
@@ -160,7 +159,7 @@ function RGBViewer({ width, height, res, ims }: CanvasProps) {
           i,
           sob,
           sot,
-          TrasnformAlgorithm.FFT1D
+          TrasnformAlgorithm.FFT2D
         )
       );
       bits.push(
@@ -170,7 +169,7 @@ function RGBViewer({ width, height, res, ims }: CanvasProps) {
           i,
           sob,
           sot,
-          TrasnformAlgorithm.FFT1D
+          TrasnformAlgorithm.FFT2D
         )
       );
       bits.push(

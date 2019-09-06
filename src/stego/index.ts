@@ -1,10 +1,12 @@
 import FFT from '../fft';
-import { fastDct8 } from '../fast-dct';
-import { hashCode, rgb2yuv } from '../helpers';
+import { fastDct8, fastDctLee } from '../fast-dct';
+import { hashCode, rgb2yuv, yuv2rgb } from '../helpers';
 
 export enum TrasnformAlgorithm {
   FDCT8,
+  FDCTLEE,
   FFT1D,
+  FFT2D,
 }
 
 export function yuvBlocks(b1: number[], b2: number[], b3: number[]) {
@@ -23,13 +25,13 @@ export function rgbBlocks(b1: number[], b2: number[], b3: number[]) {
     const u = b2[i];
     const v = b3[i];
 
-    [b1[i], b2[i], b3[i]] = rgb2yuv(y, u, v);
+    [b1[i], b2[i], b3[i]] = yuv2rgb(y, u, v);
   }
 }
 
 export function getIndexOfSize(size: number) {
-  return (size * size) / 2 + size / 2; // center
-  // return 0; // left-top corner
+  // return (size * size) / 2 + size / 2; // center
+  return 0; // left-top corner
   // return size * size - 1; // right-bottom corner
 }
 
@@ -188,7 +190,7 @@ export function getBit(
   algorithm: TrasnformAlgorithm
 ) {
   transform(reBlock, imBlock, algorithm, size);
-  return Math.round(reBlock[getIndexOfSize(size)] / tolerance) % 2;
+  return Math.round(Math.abs(reBlock[getIndexOfSize(size)]) / tolerance) % 2;
 }
 
 export function setBit(
@@ -224,9 +226,16 @@ function transform(
     case TrasnformAlgorithm.FDCT8:
       fastDct8.transform(re);
       break;
+    case TrasnformAlgorithm.FDCTLEE:
+      fastDctLee.transform(re);
+      break;
     case TrasnformAlgorithm.FFT1D:
       FFT.init(size);
       FFT.fft1d(re, im);
+      break;
+    case TrasnformAlgorithm.FFT2D:
+      FFT.init(size);
+      FFT.fft2d(re, im);
       break;
     default:
       throw new Error(`unknown algorithm: ${algorithm}`);
@@ -242,8 +251,14 @@ function inverseTransform(
     case TrasnformAlgorithm.FDCT8:
       fastDct8.inverseTransform(re);
       break;
+    case TrasnformAlgorithm.FDCTLEE:
+      fastDctLee.inverseTransform(re);
+      break;
     case TrasnformAlgorithm.FFT1D:
       FFT.ifft1d(re, im);
+      break;
+    case TrasnformAlgorithm.FFT2D:
+      FFT.ifft2d(re, im);
       break;
     default:
       throw new Error(`unknown algorithm: ${algorithm}`);
