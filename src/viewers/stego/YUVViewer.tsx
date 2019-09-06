@@ -96,7 +96,6 @@ function YUVViewer({ width, height, res, ims }: CanvasProps) {
     let j = 0;
 
     for (let i = 0; i < yReBlocks.length; i += 1) {
-      yuvBlocks(yReBlocks[i], uReBlocks[i], vReBlocks[i]); // convert rgb blocks to yuv blocks
       setBit(
         yReBlocks[i],
         yImBlocks[i],
@@ -104,7 +103,7 @@ function YUVViewer({ width, height, res, ims }: CanvasProps) {
         i,
         sob,
         sot,
-        TrasnformAlgorithm.FDCT8
+        TrasnformAlgorithm.FDCTLEE
       );
       j += 1;
 
@@ -115,7 +114,7 @@ function YUVViewer({ width, height, res, ims }: CanvasProps) {
         i,
         sob,
         sot,
-        TrasnformAlgorithm.FDCT8
+        TrasnformAlgorithm.FDCTLEE
       );
       j += 1;
 
@@ -126,7 +125,7 @@ function YUVViewer({ width, height, res, ims }: CanvasProps) {
         i,
         sob,
         sot,
-        TrasnformAlgorithm.FDCT8
+        TrasnformAlgorithm.FDCTLEE
       );
       j += 1;
 
@@ -145,17 +144,16 @@ function YUVViewer({ width, height, res, ims }: CanvasProps) {
       return;
     }
 
-    const yReBlocks = divideBlocks(width, height, sob, res[0]);
-    const uReBlocks = divideBlocks(width, height, sob, res[1]);
-    const vReBlocks = divideBlocks(width, height, sob, res[2]);
-    const yImBlocks = divideBlocks(width, height, sob, ims[0]);
-    const uImBlocks = divideBlocks(width, height, sob, ims[1]);
-    const vImBlocks = divideBlocks(width, height, sob, ims[2]);
+    const yReBlocks = divideBlocks(width, height, sob, res[3]);
+    const uReBlocks = divideBlocks(width, height, sob, res[4]);
+    const vReBlocks = divideBlocks(width, height, sob, res[5]);
+    const yImBlocks = divideBlocks(width, height, sob, ims[3]);
+    const uImBlocks = divideBlocks(width, height, sob, ims[4]);
+    const vImBlocks = divideBlocks(width, height, sob, ims[5]);
 
     const bits = [];
 
     for (let i = 0; i < yReBlocks.length; i += 1) {
-      yuvBlocks(yReBlocks[i], uReBlocks[i], vReBlocks[i]);
       bits.push(
         getBit(
           yReBlocks[i],
@@ -163,7 +161,7 @@ function YUVViewer({ width, height, res, ims }: CanvasProps) {
           i,
           sob,
           sot,
-          TrasnformAlgorithm.FDCT8
+          TrasnformAlgorithm.FDCTLEE
         )
       );
       bits.push(
@@ -173,7 +171,7 @@ function YUVViewer({ width, height, res, ims }: CanvasProps) {
           i,
           sob,
           sot,
-          TrasnformAlgorithm.FDCT8
+          TrasnformAlgorithm.FDCTLEE
         )
       );
       bits.push(
@@ -183,7 +181,7 @@ function YUVViewer({ width, height, res, ims }: CanvasProps) {
           i,
           sob,
           sot,
-          TrasnformAlgorithm.FDCT8
+          TrasnformAlgorithm.FDCTLEE
         )
       );
     }
@@ -228,6 +226,7 @@ function YUVViewer({ width, height, res, ims }: CanvasProps) {
         label="Tolerance:"
         type="number"
         min="16"
+        max="128"
         placeholder="Size of tolerance"
         value={sot}
         onChange={handleToleranceChange}
