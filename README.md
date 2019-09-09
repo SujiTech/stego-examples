@@ -12,6 +12,10 @@ open [location]/index.html
 open [location]/tools.html
 ```
 
+## Try
+
+- [stego-examples](https://sujitech.github.io/stego-examples/)
+
 ## Implemented Algorithms
 
 - FFT1D
