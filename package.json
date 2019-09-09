@@ -5,6 +5,9 @@
   "main": "index.js",
   "scripts": {
     "start": "npx parcel *.html ./assets/*",
+    "build": "npx parcel build *.html ./assets/*",
+    "prepage": "npm run build",
+    "page": "echo \"require('gh-pages').publish('dist', {repo: 'git@github.com:SujiTech/stego-examples.git'}, (e) => console.log(e))\" | node",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -15,6 +18,7 @@
     "@types/react": "^16.9.2",
     "@types/react-dom": "^16.9.0",
     "@types/styled-components": "^4.1.18",
+    "gh-pages": "^2.1.1",
     "typescript": "^3.5.3"
   },
   "dependencies": {
