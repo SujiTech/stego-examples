@@ -37690,10 +37690,10 @@ var helpers_1 = require("../helpers");
 var TrasnformAlgorithm;
 
 (function (TrasnformAlgorithm) {
-  TrasnformAlgorithm[TrasnformAlgorithm["FDCT8"] = 0] = "FDCT8";
-  TrasnformAlgorithm[TrasnformAlgorithm["FDCTLEE"] = 1] = "FDCTLEE";
-  TrasnformAlgorithm[TrasnformAlgorithm["FFT1D"] = 2] = "FFT1D";
-  TrasnformAlgorithm[TrasnformAlgorithm["FFT2D"] = 3] = "FFT2D";
+  TrasnformAlgorithm["FDCT8"] = "FDCT8";
+  TrasnformAlgorithm["FDCTLEE"] = "FDCTLEE";
+  TrasnformAlgorithm["FFT1D"] = "1D-FFT";
+  TrasnformAlgorithm["FFT2D"] = "2D-FFT";
 })(TrasnformAlgorithm = exports.TrasnformAlgorithm || (exports.TrasnformAlgorithm = {}));
 
 function yuvBlocks(b1, b2, b3) {
@@ -37722,10 +37722,20 @@ function rgbBlocks(b1, b2, b3) {
 
 exports.rgbBlocks = rgbBlocks;
 
-function getIndexOfSize(size) {
-  return size * size / 2 + size / 2; // center
-  // return 0; // left-top corner
-  // return size * size - 1; // right-bottom corner
+function getIndexOfSize(size, algorithm) {
+  switch (algorithm) {
+    case TrasnformAlgorithm.FFT1D:
+      return size * size / 2 + size / 2;
+    // center
+
+    case TrasnformAlgorithm.FFT2D:
+      return 0;
+    // left-top corner
+
+    default:
+      return size * size - 1;
+    // right-bottom corner
+  }
 }
 
 exports.getIndexOfSize = getIndexOfSize;
@@ -37908,14 +37918,14 @@ exports.mergeBits = mergeBits;
 
 function getBit(reBlock, imBlock, index, size, tolerance, algorithm) {
   transform(reBlock, imBlock, algorithm, size);
-  return Math.round(Math.abs(reBlock[getIndexOfSize(size)]) / tolerance) % 2;
+  return Math.round(Math.abs(reBlock[getIndexOfSize(size, algorithm)]) / tolerance) % 2;
 }
 
 exports.getBit = getBit;
 
 function setBit(reBlock, imBlock, bit, index, size, tolerance, algorithm) {
   transform(reBlock, imBlock, algorithm, size);
-  var i = getIndexOfSize(size);
+  var i = getIndexOfSize(size, algorithm);
   var v = Math.floor(reBlock[i] / tolerance);
 
   if (bit[0]) {
@@ -38012,7 +38022,7 @@ function setImage(block, imageData, index, size, offset) {
 }
 
 exports.setImage = setImage;
-},{"../fft":"src/fft/index.js","../fast-dct":"src/fast-dct/index.ts","../helpers":"src/helpers/index.ts"}],"src/viewers/stego/RGBViewer.tsx":[function(require,module,exports) {
+},{"../fft":"src/fft/index.js","../fast-dct":"src/fast-dct/index.ts","../helpers":"src/helpers/index.ts"}],"src/viewers/stego/FFT.tsx":[function(require,module,exports) {
 "use strict";
 
 var __importStar = this && this.__importStar || function (mod) {
@@ -38047,7 +38057,8 @@ function RGBViewer(_a) {
   var width = _a.width,
       height = _a.height,
       res = _a.res,
-      ims = _a.ims;
+      ims = _a.ims,
+      algorithm = _a.algorithm;
   var canvasRef = react_1.useRef(null);
 
   var _b = react_1.useState('hello'),
@@ -38128,13 +38139,13 @@ function RGBViewer(_a) {
     var j = 0;
 
     for (var i = 0; i < rReBlocks.length; i += 1) {
-      stego_1.setBit(rReBlocks[i], rImBlocks[i], bits.slice(j, j + 1), i, sob, sot, stego_1.TrasnformAlgorithm.FFT1D);
+      stego_1.setBit(rReBlocks[i], rImBlocks[i], bits.slice(j, j + 1), i, sob, sot, algorithm);
       stego_1.setImage(rReBlocks[i], imageData, i, sob, 0);
       j += 1;
-      stego_1.setBit(gReBlocks[i], gImBlocks[i], bits.slice(j, j + 1), i, sob, sot, stego_1.TrasnformAlgorithm.FFT1D);
+      stego_1.setBit(gReBlocks[i], gImBlocks[i], bits.slice(j, j + 1), i, sob, sot, algorithm);
       stego_1.setImage(gReBlocks[i], imageData, i, sob, 1);
       j += 1;
-      stego_1.setBit(bReBlocks[i], bImBlocks[i], bits.slice(j, j + 1), i, sob, sot, stego_1.TrasnformAlgorithm.FFT1D);
+      stego_1.setBit(bReBlocks[i], bImBlocks[i], bits.slice(j, j + 1), i, sob, sot, algorithm);
       stego_1.setImage(bReBlocks[i], imageData, i, sob, 2);
       j += 1;
     } // draw
@@ -38156,9 +38167,9 @@ function RGBViewer(_a) {
     var bits = [];
 
     for (var i = 0; i < rReBlocks.length; i += 1) {
-      bits.push(stego_1.getBit(rReBlocks[i], rImBlocks[i], i, sob, sot, stego_1.TrasnformAlgorithm.FFT1D));
-      bits.push(stego_1.getBit(gReBlocks[i], gImBlocks[i], i, sob, sot, stego_1.TrasnformAlgorithm.FFT1D));
-      bits.push(stego_1.getBit(bReBlocks[i], bImBlocks[i], i, sob, sot, stego_1.TrasnformAlgorithm.FFT1D));
+      bits.push(stego_1.getBit(rReBlocks[i], rImBlocks[i], i, sob, sot, algorithm));
+      bits.push(stego_1.getBit(gReBlocks[i], gImBlocks[i], i, sob, sot, algorithm));
+      bits.push(stego_1.getBit(bReBlocks[i], bImBlocks[i], i, sob, sot, algorithm));
     } // update text
 
 
@@ -38186,7 +38197,7 @@ function RGBViewer(_a) {
     context.putImageData(imageData, 0, 0);
   }, [canvasRef, width, height, res, ims]);
   return react_1["default"].createElement(Viewer_1["default"], {
-    title: "RGB"
+    title: algorithm
   }, react_1["default"].createElement(Canvas_1["default"], {
     width: width,
     height: height,
@@ -38230,225 +38241,6 @@ function RGBViewer(_a) {
 }
 
 exports["default"] = RGBViewer;
-},{"react":"node_modules/react/index.js","../../components/Viewer":"src/components/Viewer.tsx","../../components/Canvas":"src/components/Canvas.ts","../../components/Input":"src/components/Input.tsx","../../stego":"src/stego/index.ts"}],"src/viewers/stego/YUVViewer.tsx":[function(require,module,exports) {
-"use strict";
-
-var __importStar = this && this.__importStar || function (mod) {
-  if (mod && mod.__esModule) return mod;
-  var result = {};
-  if (mod != null) for (var k in mod) {
-    if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
-  }
-  result["default"] = mod;
-  return result;
-};
-
-var __importDefault = this && this.__importDefault || function (mod) {
-  return mod && mod.__esModule ? mod : {
-    "default": mod
-  };
-};
-
-exports.__esModule = true;
-
-var react_1 = __importStar(require("react"));
-
-var Viewer_1 = __importDefault(require("../../components/Viewer"));
-
-var Canvas_1 = __importDefault(require("../../components/Canvas"));
-
-var Input_1 = __importDefault(require("../../components/Input"));
-
-var stego_1 = require("../../stego");
-
-function YUVViewer(_a) {
-  var width = _a.width,
-      height = _a.height,
-      res = _a.res,
-      ims = _a.ims;
-  var canvasRef = react_1.useRef(null);
-
-  var _b = react_1.useState('hello'),
-      text = _b[0],
-      setText = _b[1];
-
-  var _c = react_1.useState(''),
-      error = _c[0],
-      setError = _c[1];
-
-  var _d = react_1.useState(5),
-      noc = _d[0],
-      setNoc = _d[1]; // num of copies
-
-
-  var _e = react_1.useState(8),
-      sob = _e[0],
-      setSob = _e[1]; // size of blocks
-
-
-  var _f = react_1.useState(16),
-      sot = _f[0],
-      setSot = _f[1]; // size of tolerance
-
-
-  var handleTextChange = react_1.useCallback(function (_a) {
-    var currentTarget = _a.currentTarget;
-    setText(currentTarget.value);
-  }, []);
-  var handleCopiesChange = react_1.useCallback(function (_a) {
-    var currentTarget = _a.currentTarget;
-    setNoc(parseInt(currentTarget.value, 10));
-  }, []);
-  var handleToleranceChange = react_1.useCallback(function (_a) {
-    var currentTarget = _a.currentTarget;
-    setSot(parseInt(currentTarget.value, 10));
-  }, []);
-  var handleSizeChange = react_1.useCallback(function (_a) {
-    var currentTarget = _a.currentTarget;
-    setSob(parseInt(currentTarget.value, 10));
-  }, []);
-  var handleWriteButtonClick = react_1.useCallback(function () {
-    setError('');
-
-    if (!canvasRef.current || !res || !ims || !res.length || !ims.length) {
-      setError('pls choose an image');
-      return;
-    }
-
-    if (!text) {
-      setError('pls enter a message');
-      return;
-    }
-
-    if (noc < 1) {
-      setError('at least one copy');
-      return;
-    }
-
-    var yReBlocks = stego_1.divideBlocks(width, height, sob, res[3]);
-    var uReBlocks = stego_1.divideBlocks(width, height, sob, res[4]);
-    var vReBlocks = stego_1.divideBlocks(width, height, sob, res[5]);
-    var yImBlocks = stego_1.divideBlocks(width, height, sob, ims[3]);
-    var uImBlocks = stego_1.divideBlocks(width, height, sob, ims[4]);
-    var vImBlocks = stego_1.divideBlocks(width, height, sob, ims[5]);
-    var messageBits = stego_1.str2bits(text, noc);
-
-    if (messageBits.length + 8 * noc > yReBlocks.length * 3) {
-      setError('shrink message or reduce copies');
-      return;
-    }
-
-    var bits = stego_1.mergeBits(stego_1.generateBits(yReBlocks.length * 3), messageBits, stego_1.generateBits(8 * noc).fill(1));
-    var context = canvasRef.current.getContext('2d');
-    var imageData = context.getImageData(0, 0, width, height);
-    var j = 0;
-
-    for (var i = 0; i < yReBlocks.length; i += 1) {
-      stego_1.setBit(yReBlocks[i], yImBlocks[i], bits.slice(j, j + 1), i, sob, sot, stego_1.TrasnformAlgorithm.FDCTLEE);
-      j += 1;
-      stego_1.setBit(uReBlocks[i], uImBlocks[i], bits.slice(j, j + 1), i, sob, sot, stego_1.TrasnformAlgorithm.FDCTLEE);
-      j += 1;
-      stego_1.setBit(vReBlocks[i], vImBlocks[i], bits.slice(j, j + 1), i, sob, sot, stego_1.TrasnformAlgorithm.FDCTLEE);
-      j += 1;
-      stego_1.rgbBlocks(yReBlocks[i], uReBlocks[i], vReBlocks[i]); // convert yuv blocks to rgb blocks
-
-      stego_1.setImage(yReBlocks[i], imageData, i, sob, 0);
-      stego_1.setImage(uReBlocks[i], imageData, i, sob, 1);
-      stego_1.setImage(vReBlocks[i], imageData, i, sob, 2);
-    } // draw
-
-
-    context.putImageData(imageData, 0, 0);
-  }, [canvasRef, res, ims, text, noc, sob, sot]);
-  var handleReadButtonClick = react_1.useCallback(function () {
-    if (!canvasRef.current || !res || !ims || !res.length || !ims.length) {
-      return;
-    }
-
-    var yReBlocks = stego_1.divideBlocks(width, height, sob, res[3]);
-    var uReBlocks = stego_1.divideBlocks(width, height, sob, res[4]);
-    var vReBlocks = stego_1.divideBlocks(width, height, sob, res[5]);
-    var yImBlocks = stego_1.divideBlocks(width, height, sob, ims[3]);
-    var uImBlocks = stego_1.divideBlocks(width, height, sob, ims[4]);
-    var vImBlocks = stego_1.divideBlocks(width, height, sob, ims[5]);
-    var bits = [];
-
-    for (var i = 0; i < yReBlocks.length; i += 1) {
-      bits.push(stego_1.getBit(yReBlocks[i], yImBlocks[i], i, sob, sot, stego_1.TrasnformAlgorithm.FDCTLEE));
-      bits.push(stego_1.getBit(uReBlocks[i], uImBlocks[i], i, sob, sot, stego_1.TrasnformAlgorithm.FDCTLEE));
-      bits.push(stego_1.getBit(vReBlocks[i], vImBlocks[i], i, sob, sot, stego_1.TrasnformAlgorithm.FDCTLEE));
-    } // update text
-
-
-    setText(stego_1.bits2str(bits, noc));
-  }, [canvasRef, res, ims, noc, sob, sot]);
-  react_1.useEffect(function () {
-    if (!canvasRef.current || !res || !ims || !res.length || !ims.length) {
-      return;
-    }
-
-    var context = canvasRef.current.getContext('2d');
-    var imageData = context.getImageData(0, 0, width, height);
-
-    for (var h = 0; h < height; h += 1) {
-      for (var w = 0; w < width; w += 1) {
-        var index = (h * width + w) * 4;
-        imageData.data[index] = res[0][h * width + w];
-        imageData.data[index + 1] = res[1][h * width + w + 1];
-        imageData.data[index + 2] = res[2][h * width + w + 2];
-        imageData.data[index + 3] = 255;
-      }
-    }
-
-    context.clearRect(0, 0, width, height);
-    context.putImageData(imageData, 0, 0);
-  }, [canvasRef, width, height, res, ims]);
-  return react_1["default"].createElement(Viewer_1["default"], {
-    title: "YUV"
-  }, react_1["default"].createElement(Canvas_1["default"], {
-    width: width,
-    height: height,
-    ref: canvasRef
-  }), react_1["default"].createElement(Input_1["default"], {
-    label: "Message:",
-    type: "text",
-    placeholder: "Message",
-    value: text,
-    onChange: handleTextChange
-  }), react_1["default"].createElement(Input_1["default"], {
-    label: "Tolerance:",
-    type: "number",
-    min: "16",
-    max: "128",
-    placeholder: "Size of tolerance",
-    value: sot,
-    onChange: handleToleranceChange
-  }), react_1["default"].createElement(Input_1["default"], {
-    label: "Size:",
-    type: "number",
-    min: "8",
-    placeholder: "Size of blocks",
-    value: sob,
-    onChange: handleSizeChange
-  }), react_1["default"].createElement(Input_1["default"], {
-    label: "Copies:",
-    type: "number",
-    min: "1",
-    placeholder: "Number of copies",
-    value: noc,
-    onChange: handleCopiesChange
-  }), react_1["default"].createElement("button", {
-    onClick: handleWriteButtonClick
-  }, "Write"), react_1["default"].createElement("button", {
-    onClick: handleReadButtonClick
-  }, "Read"), error ? react_1["default"].createElement("span", {
-    style: {
-      color: 'red'
-    }
-  }, error) : null);
-}
-
-exports["default"] = YUVViewer;
 },{"react":"node_modules/react/index.js","../../components/Viewer":"src/components/Viewer.tsx","../../components/Canvas":"src/components/Canvas.ts","../../components/Input":"src/components/Input.tsx","../../stego":"src/stego/index.ts"}],"src/components/Picker.tsx":[function(require,module,exports) {
 "use strict";
 
@@ -38576,11 +38368,11 @@ var react_dom_1 = __importDefault(require("react-dom"));
 
 var Container_1 = __importDefault(require("./components/Container"));
 
-var RGBViewer_1 = __importDefault(require("./viewers/stego/RGBViewer"));
-
-var YUVViewer_1 = __importDefault(require("./viewers/stego/YUVViewer"));
+var FFT_1 = __importDefault(require("./viewers/stego/FFT"));
 
 var Picker_1 = __importDefault(require("./components/Picker"));
+
+var stego_1 = require("./stego");
 
 function App() {
   var _a = react_1.useState([]),
@@ -38611,21 +38403,23 @@ function App() {
   }, []);
   return react_1["default"].createElement(react_1["default"].Fragment, null, react_1["default"].createElement(Picker_1["default"], {
     onChange: onPickerChange
-  }), react_1["default"].createElement(Container_1["default"], null, react_1["default"].createElement(RGBViewer_1["default"], {
+  }), react_1["default"].createElement(Container_1["default"], null, react_1["default"].createElement(FFT_1["default"], {
     width: width,
     height: height,
     res: res,
-    ims: ims
-  }), react_1["default"].createElement(YUVViewer_1["default"], {
+    ims: ims,
+    algorithm: stego_1.TrasnformAlgorithm.FFT1D
+  }), react_1["default"].createElement(FFT_1["default"], {
     width: width,
     height: height,
     res: res,
-    ims: ims
+    ims: ims,
+    algorithm: stego_1.TrasnformAlgorithm.FFT2D
   })));
 }
 
 react_dom_1["default"].render(react_1["default"].createElement(App, null), document.getElementById('root'));
-},{"react":"node_modules/react/index.js","react-dom":"node_modules/react-dom/index.js","./components/Container":"src/components/Container.ts","./viewers/stego/RGBViewer":"src/viewers/stego/RGBViewer.tsx","./viewers/stego/YUVViewer":"src/viewers/stego/YUVViewer.tsx","./components/Picker":"src/components/Picker.tsx"}],"../../.nvm/versions/node/v10.16.0/lib/node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
+},{"react":"node_modules/react/index.js","react-dom":"node_modules/react-dom/index.js","./components/Container":"src/components/Container.ts","./viewers/stego/FFT":"src/viewers/stego/FFT.tsx","./components/Picker":"src/components/Picker.tsx","./stego":"src/stego/index.ts"}],"../../.nvm/versions/node/v10.16.0/lib/node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
 var OVERLAY_ID = '__parcel__error__overlay__';
 var OldModule = module.bundle.Module;
@@ -38653,7 +38447,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "59632" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "52555" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
