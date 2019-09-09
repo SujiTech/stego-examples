@@ -12,6 +12,12 @@ open [location]/index.html
 open [location]/tools.html
 ```
 
+## For Developers
+
+```bash
+npm run page // build and publish to gh-pages
+```
+
 ## Try
 
 - [stego-examples](https://sujitech.github.io/stego-examples/)

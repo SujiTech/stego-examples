@@ -5,9 +5,9 @@
   "main": "index.js",
   "scripts": {
     "start": "npx parcel *.html ./assets/*",
-    "build": "npx parcel build *.html ./assets/*",
+    "build": "npx parcel build *.html ./assets/* --public-url /stego-examples/",
     "prepage": "npm run build",
-    "page": "echo \"require('gh-pages').publish('dist', {repo: 'git@github.com:SujiTech/stego-examples.git'}, (e) => console.log(e))\" | node",
+    "page": "echo \"require('gh-pages').publish('dist', {repo: 'git@github.com:SujiTech/stego-examples.git'}, (e) => console.log(e || 'done'))\" | node",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
