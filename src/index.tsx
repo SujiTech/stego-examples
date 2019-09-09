@@ -1,9 +1,9 @@
 import React, { useState, useCallback } from 'react';
 import ReactDOM from 'react-dom';
 import Container from './components/Container';
-import SteganographyRGBViewer from './viewers/stego/RGBViewer';
-import SteganographyYUVViewer from './viewers/stego/YUVViewer';
+import FFTViewer from './viewers/stego/FFT';
 import Picker, { PickerData } from './components/Picker';
+import { TrasnformAlgorithm } from './stego';
 
 function App() {
   const [res, setRes] = useState<number[][]>([]);
@@ -24,17 +24,19 @@ function App() {
     <>
       <Picker onChange={onPickerChange} />
       <Container>
-        <SteganographyRGBViewer
+        <FFTViewer
           width={width}
           height={height}
           res={res}
           ims={ims}
+          algorithm={TrasnformAlgorithm.FFT1D}
         />
-        <SteganographyYUVViewer
+        <FFTViewer
           width={width}
           height={height}
           res={res}
           ims={ims}
+          algorithm={TrasnformAlgorithm.FFT2D}
         />
       </Container>
     </>

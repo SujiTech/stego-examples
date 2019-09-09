@@ -1,6 +1,6 @@
 # Stego Examples
 
-> Steganography algorithms implemented in JavaScript
+> Some image steganography examples implemented in pure JavaScript
 
 ## Setup
 

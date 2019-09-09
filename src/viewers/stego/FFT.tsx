@@ -17,11 +17,10 @@ import {
   bits2str,
   generateBits,
   mergeBits,
-  TrasnformAlgorithm,
 } from '../../stego';
 import { CanvasProps } from '../../types';
 
-function RGBViewer({ width, height, res, ims }: CanvasProps) {
+function RGBViewer({ width, height, res, ims, algorithm }: CanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [text, setText] = useState('hello');
   const [error, setError] = useState('');
@@ -103,7 +102,7 @@ function RGBViewer({ width, height, res, ims }: CanvasProps) {
         i,
         sob,
         sot,
-        TrasnformAlgorithm.FFT2D
+        algorithm
       );
       setImage(rReBlocks[i], imageData, i, sob, 0);
       j += 1;
@@ -115,7 +114,7 @@ function RGBViewer({ width, height, res, ims }: CanvasProps) {
         i,
         sob,
         sot,
-        TrasnformAlgorithm.FFT2D
+        algorithm
       );
       setImage(gReBlocks[i], imageData, i, sob, 1);
       j += 1;
@@ -127,7 +126,7 @@ function RGBViewer({ width, height, res, ims }: CanvasProps) {
         i,
         sob,
         sot,
-        TrasnformAlgorithm.FFT2D
+        algorithm
       );
       setImage(bReBlocks[i], imageData, i, sob, 2);
       j += 1;
@@ -152,36 +151,9 @@ function RGBViewer({ width, height, res, ims }: CanvasProps) {
     const bits = [];
 
     for (let i = 0; i < rReBlocks.length; i += 1) {
-      bits.push(
-        getBit(
-          rReBlocks[i],
-          rImBlocks[i],
-          i,
-          sob,
-          sot,
-          TrasnformAlgorithm.FFT2D
-        )
-      );
-      bits.push(
-        getBit(
-          gReBlocks[i],
-          gImBlocks[i],
-          i,
-          sob,
-          sot,
-          TrasnformAlgorithm.FFT2D
-        )
-      );
-      bits.push(
-        getBit(
-          bReBlocks[i],
-          bImBlocks[i],
-          i,
-          sob,
-          sot,
-          TrasnformAlgorithm.FFT1D
-        )
-      );
+      bits.push(getBit(rReBlocks[i], rImBlocks[i], i, sob, sot, algorithm));
+      bits.push(getBit(gReBlocks[i], gImBlocks[i], i, sob, sot, algorithm));
+      bits.push(getBit(bReBlocks[i], bImBlocks[i], i, sob, sot, algorithm));
     }
 
     // update text
@@ -211,7 +183,7 @@ function RGBViewer({ width, height, res, ims }: CanvasProps) {
   }, [canvasRef, width, height, res, ims]);
 
   return (
-    <Viewer title="RGB">
+    <Viewer title={algorithm}>
       <Canvas width={width} height={height} ref={canvasRef} />
       <Input
         label="Message:"

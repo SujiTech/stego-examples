@@ -3,10 +3,10 @@ import { fastDct8, fastDctLee } from '../fast-dct';
 import { hashCode, rgb2yuv, yuv2rgb } from '../helpers';
 
 export enum TrasnformAlgorithm {
-  FDCT8,
-  FDCTLEE,
-  FFT1D,
-  FFT2D,
+  FDCT8 = 'FDCT8',
+  FDCTLEE = 'FDCTLEE',
+  FFT1D = '1D-FFT',
+  FFT2D = '2D-FFT',
 }
 
 export function yuvBlocks(b1: number[], b2: number[], b3: number[]) {
@@ -29,10 +29,15 @@ export function rgbBlocks(b1: number[], b2: number[], b3: number[]) {
   }
 }
 
-export function getIndexOfSize(size: number) {
-  // return (size * size) / 2 + size / 2; // center
-  return 0; // left-top corner
-  // return size * size - 1; // right-bottom corner
+export function getIndexOfSize(size: number, algorithm: TrasnformAlgorithm) {
+  switch (algorithm) {
+    case TrasnformAlgorithm.FFT1D:
+      return (size * size) / 2 + size / 2; // center
+    case TrasnformAlgorithm.FFT2D:
+      return 0; // left-top corner
+    default:
+      return size * size - 1; // right-bottom corner
+  }
 }
 
 export function divideBlocks(
@@ -190,7 +195,10 @@ export function getBit(
   algorithm: TrasnformAlgorithm
 ) {
   transform(reBlock, imBlock, algorithm, size);
-  return Math.round(Math.abs(reBlock[getIndexOfSize(size)]) / tolerance) % 2;
+  return (
+    Math.round(Math.abs(reBlock[getIndexOfSize(size, algorithm)]) / tolerance) %
+    2
+  );
 }
 
 export function setBit(
@@ -204,7 +212,7 @@ export function setBit(
 ) {
   transform(reBlock, imBlock, algorithm, size);
 
-  const i = getIndexOfSize(size);
+  const i = getIndexOfSize(size, algorithm);
   const v = Math.floor(reBlock[i] / tolerance);
 
   if (bit[0]) {
