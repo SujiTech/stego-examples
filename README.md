@@ -21,6 +21,7 @@ npm run page // build and publish to gh-pages
 ## Try
 
 - [stego-examples](https://sujitech.github.io/stego-examples/)
+- [stego-tools](https://sujitech.github.io/stego-examples/tools.html)
 
 ## Implemented Algorithms
 
