@@ -92,44 +92,26 @@ function RGBViewer({ width, height, res, ims, algorithm }: CanvasProps) {
     const context = canvasRef.current.getContext('2d');
     const imageData = context.getImageData(0, 0, width, height);
 
+    // current bit position
     let j = 0;
+    const length = rReBlocks.length;
+    const reChannels = [rReBlocks, gReBlocks, bReBlocks];
+    const imChannels = [rImBlocks, gImBlocks, bImBlocks];
 
-    for (let i = 0; i < rReBlocks.length; i += 1) {
-      setBit(
-        rReBlocks[i],
-        rImBlocks[i],
-        bits.slice(j, j + 1),
-        i,
-        sob,
-        sot,
-        algorithm
-      );
-      setImage(rReBlocks[i], imageData, i, sob, 0);
-      j += 1;
-
-      setBit(
-        gReBlocks[i],
-        gImBlocks[i],
-        bits.slice(j, j + 1),
-        i,
-        sob,
-        sot,
-        algorithm
-      );
-      setImage(gReBlocks[i], imageData, i, sob, 1);
-      j += 1;
-
-      setBit(
-        bReBlocks[i],
-        bImBlocks[i],
-        bits.slice(j, j + 1),
-        i,
-        sob,
-        sot,
-        algorithm
-      );
-      setImage(bReBlocks[i], imageData, i, sob, 2);
-      j += 1;
+    for (let i = 0; i < length; i += 1) {
+      for (let c = 0; c < 3; c += 1) {
+        setBit(
+          reChannels[c][i],
+          imChannels[c][i],
+          bits.slice(j, j + 1),
+          i,
+          sob,
+          sot,
+          algorithm
+        );
+        setImage(reChannels[c][i], imageData, i, sob, c);
+        j += 1;
+      }
     }
 
     // draw
@@ -149,11 +131,16 @@ function RGBViewer({ width, height, res, ims, algorithm }: CanvasProps) {
     const bImBlocks = divideBlocks(width, height, sob, ims[2]);
 
     const bits = [];
+    const length = rReBlocks.length;
+    const reChannels = [rReBlocks, gReBlocks, bReBlocks];
+    const imChannels = [rImBlocks, gImBlocks, bImBlocks];
 
-    for (let i = 0; i < rReBlocks.length; i += 1) {
-      bits.push(getBit(rReBlocks[i], rImBlocks[i], i, sob, sot, algorithm));
-      bits.push(getBit(gReBlocks[i], gImBlocks[i], i, sob, sot, algorithm));
-      bits.push(getBit(bReBlocks[i], bImBlocks[i], i, sob, sot, algorithm));
+    for (let i = 0; i < length; i += 1) {
+      for (let c = 0; c < 3; c += 1) {
+        bits.push(
+          getBit(reChannels[c][i], imChannels[c][i], i, sob, sot, algorithm)
+        );
+      }
     }
 
     // update text

@@ -234,7 +234,7 @@ function PhaseViewer({ width, height, res, ims }: CanvasProps) {
         onChange={handleCheckboxChange('Cr')}
       />
       <Checkbox
-        label="Use Transform"
+        label="Use Shift"
         checked={useTransform}
         onChange={handleTransformCheckboxChange}
       />

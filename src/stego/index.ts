@@ -9,6 +9,18 @@ export enum TrasnformAlgorithm {
   FFT2D = '2D-FFT',
 }
 
+export function shiftRgbBlock(block: number[]) {
+  block.forEach((n, i) => {
+    block[i] = n - 128;
+  });
+}
+
+export function unshifitRgbBlock(block: number[]) {
+  block.forEach((n, i) => {
+    block[i] = n + 128;
+  });
+}
+
 export function yuvBlocks(b1: number[], b2: number[], b3: number[]) {
   for (let i = 0; i < b1.length; i += 1) {
     const r = b1[i];

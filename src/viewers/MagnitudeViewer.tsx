@@ -20,7 +20,7 @@ function MagnitudeViewer({ width, height, res, ims }: CanvasProps) {
   const [useCb, setUseCb] = useState(false);
   const [useCr, setUseVCr] = useState(false);
   const [useLog, setUseLog] = useState(true);
-  const [useTransform, setUseTransform] = useState(true);
+  const [useShift, setuseShift] = useState(true);
   const handleColorCheckboxChange = useCallback(
     (channel: 'R' | 'G' | 'B' | 'Y' | 'Cb' | 'Cr') => {
       return () => {
@@ -86,9 +86,9 @@ function MagnitudeViewer({ width, height, res, ims }: CanvasProps) {
   );
   const handleTransformCheckboxChange = useCallback(
     (ev: ChangeEvent<HTMLInputElement>) => {
-      setUseTransform(!useTransform);
+      setuseShift(!useShift);
     },
-    [useTransform]
+    [useShift]
   );
 
   useEffect(() => {
@@ -171,7 +171,7 @@ function MagnitudeViewer({ width, height, res, ims }: CanvasProps) {
     //
     // C | B
     // D | A
-    if (useTransform) {
+    if (useShift) {
       const halfHeight = Math.floor(height / 2);
       const halfWidth = Math.floor(width / 2);
 
@@ -206,7 +206,7 @@ function MagnitudeViewer({ width, height, res, ims }: CanvasProps) {
     ims,
     res,
     useLog,
-    useTransform,
+    useShift,
     useR,
     useG,
     useB,
@@ -260,8 +260,8 @@ function MagnitudeViewer({ width, height, res, ims }: CanvasProps) {
         onChange={handleLogCheckboxChange}
       />
       <Checkbox
-        label="Use Transform"
-        checked={useTransform}
+        label="Use Shift"
+        checked={useShift}
         onChange={handleTransformCheckboxChange}
       />
     </Viewer>
