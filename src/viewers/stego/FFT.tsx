@@ -19,10 +19,13 @@ import {
   mergeBits,
 } from '../../stego';
 import { CanvasProps } from '../../types';
+import Checkbox from '../../components/Checkbox';
 
 function RGBViewer({ width, height, res, ims, algorithm }: CanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [useRandom, setUseRandom] = useState(false);
   const [text, setText] = useState('hello');
+  const [pwd, setPwd] = useState('hello');
   const [error, setError] = useState('');
   const [noc, setNoc] = useState(5); // num of copies
   const [sob, setSob] = useState(8); // size of blocks
@@ -40,6 +43,13 @@ function RGBViewer({ width, height, res, ims, algorithm }: CanvasProps) {
     },
     []
   );
+  const handlePwdChange = useCallback(
+    ({ currentTarget }: ChangeEvent<HTMLInputElement>) => {
+      setPwd(currentTarget.value);
+    },
+    []
+  );
+
   const handleToleranceChange = useCallback(
     ({ currentTarget }: ChangeEvent<HTMLInputElement>) => {
       setSot(parseInt(currentTarget.value, 10));
@@ -52,6 +62,9 @@ function RGBViewer({ width, height, res, ims, algorithm }: CanvasProps) {
     },
     []
   );
+  const handleRandomCheckboxChange = useCallback(() => {
+    setUseRandom(!useRandom);
+  }, [useRandom]);
 
   const handleWriteButtonClick = useCallback(() => {
     setError('');
@@ -179,6 +192,14 @@ function RGBViewer({ width, height, res, ims, algorithm }: CanvasProps) {
         value={text}
         onChange={handleTextChange}
       />
+      {useRandom ? (
+        <Input
+          label="Password:"
+          placeholder="Number of copies"
+          value={pwd}
+          onChange={handlePwdChange}
+        />
+      ) : null}
       <Input
         label="Tolerance:"
         type="number"
@@ -206,6 +227,11 @@ function RGBViewer({ width, height, res, ims, algorithm }: CanvasProps) {
       <button onClick={handleWriteButtonClick}>Write</button>
       <button onClick={handleReadButtonClick}>Read</button>
       {error ? <span style={{ color: 'red' }}>{error}</span> : null}
+      <Checkbox
+        label="Use Random Block"
+        checked={useRandom}
+        onChange={handleRandomCheckboxChange}
+      />
     </Viewer>
   );
 }
