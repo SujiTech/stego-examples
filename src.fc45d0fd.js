@@ -37670,6 +37670,75 @@ function hashCode(previousCode, mod, inArray) {
 }
 
 exports.hashCode = hashCode;
+},{}],"src/dct/index.ts":[function(require,module,exports) {
+"use strict"; // MORE:
+// https://en.wikipedia.org/wiki/JPEG
+
+exports.__esModule = true;
+var ONE_SQUARE_ROOT_OF_TWO = 1 / Math.sqrt(2); // type-II DCT
+
+function dct(nums, size) {
+  if (size === void 0) {
+    size = 8;
+  }
+
+  var coefficients = [];
+
+  for (var v = 0; v < size; v += 1) {
+    for (var u = 0; u < size; u += 1) {
+      var au = u === 0 ? ONE_SQUARE_ROOT_OF_TWO : 1;
+      var av = v === 0 ? ONE_SQUARE_ROOT_OF_TWO : 1;
+      var sum = 0;
+
+      for (var y = 0; y < size; y += 1) {
+        for (var x = 0; x < size; x += 1) {
+          sum += nums[y * size + x] * Math.cos((2 * x + 1) * u * Math.PI / 16) * Math.cos((2 * y + 1) * v * Math.PI / 16);
+        }
+      }
+
+      coefficients.push(sum * au * av / 4);
+    }
+  } // in-place update
+
+
+  for (var i = 0; i < coefficients.length; i += 1) {
+    nums[i] = coefficients[i];
+  }
+}
+
+exports.dct = dct; // type-III DCT
+
+function idct(coefficients, size) {
+  if (size === void 0) {
+    size = 8;
+  }
+
+  var nums = [];
+
+  for (var y = 0; y < size; y += 1) {
+    for (var x = 0; x < size; x += 1) {
+      var sum = 0;
+
+      for (var v = 0; v < size; v += 1) {
+        for (var u = 0; u < size; u += 1) {
+          var au = u === 0 ? ONE_SQUARE_ROOT_OF_TWO : 1;
+          var av = v === 0 ? ONE_SQUARE_ROOT_OF_TWO : 1;
+          sum += au * av * coefficients[v * size + u] * Math.cos((2 * x + 1) * u * Math.PI / 16) * Math.cos((2 * y + 1) * v * Math.PI / 16);
+        }
+      }
+
+      nums.push(sum / 4);
+    }
+  } // in-place update
+
+
+  for (var i = 0; i < nums.length; i += 1) {
+    coefficients[i] = nums[i];
+  }
+}
+
+exports.idct = idct;
+exports.QUANTIZATION_MATRIX = [16, 11, 10, 16, 24, 40, 51, 61, 12, 12, 14, 19, 26, 58, 60, 55, 14, 13, 16, 24, 40, 57, 69, 56, 14, 17, 22, 29, 51, 87, 80, 62, 18, 22, 37, 56, 68, 109, 103, 77, 24, 35, 55, 64, 81, 104, 113, 92, 49, 64, 78, 87, 103, 121, 120, 101, 72, 92, 95, 98, 112, 100, 103, 99];
 },{}],"src/stego/index.ts":[function(require,module,exports) {
 "use strict";
 
@@ -37687,14 +37756,33 @@ var fast_dct_1 = require("../fast-dct");
 
 var helpers_1 = require("../helpers");
 
+var dct_1 = require("../dct");
+
 var TrasnformAlgorithm;
 
 (function (TrasnformAlgorithm) {
+  TrasnformAlgorithm["DCT"] = "DCT";
   TrasnformAlgorithm["FDCT8"] = "FDCT8";
   TrasnformAlgorithm["FDCTLEE"] = "FDCTLEE";
   TrasnformAlgorithm["FFT1D"] = "1D-FFT";
   TrasnformAlgorithm["FFT2D"] = "2D-FFT";
 })(TrasnformAlgorithm = exports.TrasnformAlgorithm || (exports.TrasnformAlgorithm = {}));
+
+function shiftBlock(block) {
+  block.forEach(function (n, i) {
+    block[i] = n - 128;
+  });
+}
+
+exports.shiftBlock = shiftBlock;
+
+function unshiftBlock(block) {
+  block.forEach(function (n, i) {
+    block[i] = n + 128;
+  });
+}
+
+exports.unshiftBlock = unshiftBlock;
 
 function yuvBlocks(b1, b2, b3) {
   var _a;
@@ -37724,6 +37812,9 @@ exports.rgbBlocks = rgbBlocks;
 
 function getIndexOfSize(size, algorithm) {
   switch (algorithm) {
+    case TrasnformAlgorithm.DCT:
+      return 0;
+
     case TrasnformAlgorithm.FFT1D:
       return size * size / 2 + size / 2;
     // center
@@ -37918,7 +38009,7 @@ exports.mergeBits = mergeBits;
 
 function getBit(reBlock, imBlock, index, size, tolerance, algorithm) {
   transform(reBlock, imBlock, algorithm, size);
-  return Math.round(Math.abs(reBlock[getIndexOfSize(size, algorithm)]) / tolerance) % 2;
+  return Math.abs(Math.round(reBlock[getIndexOfSize(size, algorithm)] / tolerance) % 2);
 }
 
 exports.getBit = getBit;
@@ -37934,14 +38025,18 @@ function setBit(reBlock, imBlock, bit, index, size, tolerance, algorithm) {
     reBlock[i] = v % 2 === 1 ? (v - 1) * tolerance : v * tolerance;
   }
 
-  inverseTransform(reBlock, imBlock, algorithm);
-  return reBlock[i];
+  inverseTransform(reBlock, imBlock, algorithm, size);
 }
 
 exports.setBit = setBit;
 
 function transform(re, im, algorithm, size) {
   switch (algorithm) {
+    case TrasnformAlgorithm.DCT:
+      shiftBlock(re);
+      dct_1.dct(re, size);
+      break;
+
     case TrasnformAlgorithm.FDCT8:
       fast_dct_1.fastDct8.transform(re);
       break;
@@ -37965,8 +38060,15 @@ function transform(re, im, algorithm, size) {
   }
 }
 
-function inverseTransform(re, im, algorithm) {
+exports.transform = transform;
+
+function inverseTransform(re, im, algorithm, size) {
   switch (algorithm) {
+    case TrasnformAlgorithm.DCT:
+      dct_1.idct(re, size);
+      unshiftBlock(re);
+      break;
+
     case TrasnformAlgorithm.FDCT8:
       fast_dct_1.fastDct8.inverseTransform(re);
       break;
@@ -37987,6 +38089,8 @@ function inverseTransform(re, im, algorithm) {
       throw new Error("unknown algorithm: " + algorithm);
   }
 }
+
+exports.inverseTransform = inverseTransform;
 
 function clamp(v, min, max) {
   if (v < min) {
@@ -38022,7 +38126,34 @@ function setImage(block, imageData, index, size, offset) {
 }
 
 exports.setImage = setImage;
-},{"../fft":"src/fft/index.js","../fast-dct":"src/fast-dct/index.ts","../helpers":"src/helpers/index.ts"}],"src/viewers/stego/FFT.tsx":[function(require,module,exports) {
+},{"../fft":"src/fft/index.js","../fast-dct":"src/fast-dct/index.ts","../helpers":"src/helpers/index.ts","../dct":"src/dct/index.ts"}],"src/components/Checkbox.tsx":[function(require,module,exports) {
+"use strict";
+
+var __importDefault = this && this.__importDefault || function (mod) {
+  return mod && mod.__esModule ? mod : {
+    "default": mod
+  };
+};
+
+exports.__esModule = true;
+
+var react_1 = __importDefault(require("react"));
+
+var Checkbox = function Checkbox(_a) {
+  var _b = _a.type,
+      type = _b === void 0 ? 'checkbox' : _b,
+      label = _a.label,
+      checked = _a.checked,
+      onChange = _a.onChange;
+  return react_1["default"].createElement("label", null, react_1["default"].createElement("input", {
+    type: type,
+    checked: checked,
+    onChange: onChange
+  }), react_1["default"].createElement("span", null, label));
+};
+
+exports["default"] = Checkbox;
+},{"react":"node_modules/react/index.js"}],"src/viewers/stego/RGB.tsx":[function(require,module,exports) {
 "use strict";
 
 var __importStar = this && this.__importStar || function (mod) {
@@ -38053,6 +38184,8 @@ var Input_1 = __importDefault(require("../../components/Input"));
 
 var stego_1 = require("../../stego");
 
+var Checkbox_1 = __importDefault(require("../../components/Checkbox"));
+
 function RGBViewer(_a) {
   var width = _a.width,
       height = _a.height,
@@ -38061,45 +38194,60 @@ function RGBViewer(_a) {
       algorithm = _a.algorithm;
   var canvasRef = react_1.useRef(null);
 
-  var _b = react_1.useState('hello'),
-      text = _b[0],
-      setText = _b[1];
+  var _b = react_1.useState(false),
+      useRandom = _b[0],
+      setUseRandom = _b[1];
 
-  var _c = react_1.useState(''),
-      error = _c[0],
-      setError = _c[1];
+  var _c = react_1.useState('hello'),
+      text = _c[0],
+      setText = _c[1];
 
-  var _d = react_1.useState(5),
-      noc = _d[0],
-      setNoc = _d[1]; // num of copies
+  var _d = react_1.useState('hello'),
+      pwd = _d[0],
+      setPwd = _d[1];
+
+  var _e = react_1.useState(''),
+      error = _e[0],
+      setError = _e[1];
+
+  var _f = react_1.useState(5),
+      noc = _f[0],
+      setNoc = _f[1]; // num of copies
 
 
-  var _e = react_1.useState(8),
-      sob = _e[0],
-      setSob = _e[1]; // size of blocks
+  var _g = react_1.useState(8),
+      sob = _g[0],
+      setSob = _g[1]; // size of blocks
 
 
-  var _f = react_1.useState(16),
-      sot = _f[0],
-      setSot = _f[1]; // size of tolerance
+  var _h = react_1.useState(16),
+      sot = _h[0],
+      setSot = _h[1]; // size of tolerance
 
 
   var handleTextChange = react_1.useCallback(function (_a) {
     var currentTarget = _a.currentTarget;
-    setText(currentTarget.value);
+    return setText(currentTarget.value);
   }, []);
   var handleCopiesChange = react_1.useCallback(function (_a) {
     var currentTarget = _a.currentTarget;
-    setNoc(parseInt(currentTarget.value, 10));
+    return setNoc(parseInt(currentTarget.value, 10));
+  }, []);
+  var handlePwdChange = react_1.useCallback(function (_a) {
+    var currentTarget = _a.currentTarget;
+    return setPwd(currentTarget.value);
   }, []);
   var handleToleranceChange = react_1.useCallback(function (_a) {
     var currentTarget = _a.currentTarget;
-    setSot(parseInt(currentTarget.value, 10));
+    return setSot(parseInt(currentTarget.value, 10));
   }, []);
   var handleSizeChange = react_1.useCallback(function (_a) {
     var currentTarget = _a.currentTarget;
-    setSob(parseInt(currentTarget.value, 10));
+    return setSob(parseInt(currentTarget.value, 10));
   }, []);
+  var handleRandomCheckboxChange = react_1.useCallback(function () {
+    return setUseRandom(!useRandom);
+  }, [useRandom]);
   var handleWriteButtonClick = react_1.useCallback(function () {
     setError('');
 
@@ -38136,18 +38284,18 @@ function RGBViewer(_a) {
     );
     var context = canvasRef.current.getContext('2d');
     var imageData = context.getImageData(0, 0, width, height);
-    var j = 0;
+    var j = 0; // current bit position
 
-    for (var i = 0; i < rReBlocks.length; i += 1) {
-      stego_1.setBit(rReBlocks[i], rImBlocks[i], bits.slice(j, j + 1), i, sob, sot, algorithm);
-      stego_1.setImage(rReBlocks[i], imageData, i, sob, 0);
-      j += 1;
-      stego_1.setBit(gReBlocks[i], gImBlocks[i], bits.slice(j, j + 1), i, sob, sot, algorithm);
-      stego_1.setImage(gReBlocks[i], imageData, i, sob, 1);
-      j += 1;
-      stego_1.setBit(bReBlocks[i], bImBlocks[i], bits.slice(j, j + 1), i, sob, sot, algorithm);
-      stego_1.setImage(bReBlocks[i], imageData, i, sob, 2);
-      j += 1;
+    var length = rReBlocks.length;
+    var reChannels = [rReBlocks, gReBlocks, bReBlocks];
+    var imChannels = [rImBlocks, gImBlocks, bImBlocks];
+
+    for (var i = 0; i < length; i += 1) {
+      for (var c = 0; c < 3; c += 1) {
+        stego_1.setBit(reChannels[c][i], imChannels[c][i], bits.slice(j, j + 1), i, sob, sot, algorithm);
+        stego_1.setImage(reChannels[c][i], imageData, i, sob, c);
+        j += 1;
+      }
     } // draw
 
 
@@ -38165,11 +38313,14 @@ function RGBViewer(_a) {
     var gImBlocks = stego_1.divideBlocks(width, height, sob, ims[1]);
     var bImBlocks = stego_1.divideBlocks(width, height, sob, ims[2]);
     var bits = [];
+    var length = rReBlocks.length;
+    var reChannels = [rReBlocks, gReBlocks, bReBlocks];
+    var imChannels = [rImBlocks, gImBlocks, bImBlocks];
 
-    for (var i = 0; i < rReBlocks.length; i += 1) {
-      bits.push(stego_1.getBit(rReBlocks[i], rImBlocks[i], i, sob, sot, algorithm));
-      bits.push(stego_1.getBit(gReBlocks[i], gImBlocks[i], i, sob, sot, algorithm));
-      bits.push(stego_1.getBit(bReBlocks[i], bImBlocks[i], i, sob, sot, algorithm));
+    for (var i = 0; i < length; i += 1) {
+      for (var c = 0; c < 3; c += 1) {
+        bits.push(stego_1.getBit(reChannels[c][i], imChannels[c][i], i, sob, sot, algorithm));
+      }
     } // update text
 
 
@@ -38208,7 +38359,12 @@ function RGBViewer(_a) {
     placeholder: "Message",
     value: text,
     onChange: handleTextChange
-  }), react_1["default"].createElement(Input_1["default"], {
+  }), useRandom ? react_1["default"].createElement(Input_1["default"], {
+    label: "Password:",
+    placeholder: "Number of copies",
+    value: pwd,
+    onChange: handlePwdChange
+  }) : null, react_1["default"].createElement(Input_1["default"], {
     label: "Tolerance:",
     type: "number",
     min: "16",
@@ -38237,11 +38393,15 @@ function RGBViewer(_a) {
     style: {
       color: 'red'
     }
-  }, error) : null);
+  }, error) : null, react_1["default"].createElement(Checkbox_1["default"], {
+    label: "Use Random Block",
+    checked: useRandom,
+    onChange: handleRandomCheckboxChange
+  }));
 }
 
 exports["default"] = RGBViewer;
-},{"react":"node_modules/react/index.js","../../components/Viewer":"src/components/Viewer.tsx","../../components/Canvas":"src/components/Canvas.ts","../../components/Input":"src/components/Input.tsx","../../stego":"src/stego/index.ts"}],"src/components/Picker.tsx":[function(require,module,exports) {
+},{"react":"node_modules/react/index.js","../../components/Viewer":"src/components/Viewer.tsx","../../components/Canvas":"src/components/Canvas.ts","../../components/Input":"src/components/Input.tsx","../../stego":"src/stego/index.ts","../../components/Checkbox":"src/components/Checkbox.tsx"}],"src/components/Picker.tsx":[function(require,module,exports) {
 "use strict";
 
 var __importStar = this && this.__importStar || function (mod) {
@@ -38368,7 +38528,7 @@ var react_dom_1 = __importDefault(require("react-dom"));
 
 var Container_1 = __importDefault(require("./components/Container"));
 
-var FFT_1 = __importDefault(require("./viewers/stego/FFT"));
+var RGB_1 = __importDefault(require("./viewers/stego/RGB"));
 
 var Picker_1 = __importDefault(require("./components/Picker"));
 
@@ -38403,23 +38563,29 @@ function App() {
   }, []);
   return react_1["default"].createElement(react_1["default"].Fragment, null, react_1["default"].createElement(Picker_1["default"], {
     onChange: onPickerChange
-  }), react_1["default"].createElement(Container_1["default"], null, react_1["default"].createElement(FFT_1["default"], {
+  }), react_1["default"].createElement(Container_1["default"], null, react_1["default"].createElement(RGB_1["default"], {
     width: width,
     height: height,
     res: res,
     ims: ims,
     algorithm: stego_1.TrasnformAlgorithm.FFT1D
-  }), react_1["default"].createElement(FFT_1["default"], {
+  }), react_1["default"].createElement(RGB_1["default"], {
     width: width,
     height: height,
     res: res,
     ims: ims,
     algorithm: stego_1.TrasnformAlgorithm.FFT2D
+  }), react_1["default"].createElement(RGB_1["default"], {
+    width: width,
+    height: height,
+    res: res,
+    ims: ims,
+    algorithm: stego_1.TrasnformAlgorithm.DCT
   })));
 }
 
 react_dom_1["default"].render(react_1["default"].createElement(App, null), document.getElementById('root'));
-},{"react":"node_modules/react/index.js","react-dom":"node_modules/react-dom/index.js","./components/Container":"src/components/Container.ts","./viewers/stego/FFT":"src/viewers/stego/FFT.tsx","./components/Picker":"src/components/Picker.tsx","./stego":"src/stego/index.ts"}],"../../.nvm/versions/node/v10.16.0/lib/node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
+},{"react":"node_modules/react/index.js","react-dom":"node_modules/react-dom/index.js","./components/Container":"src/components/Container.ts","./viewers/stego/RGB":"src/viewers/stego/RGB.tsx","./components/Picker":"src/components/Picker.tsx","./stego":"src/stego/index.ts"}],"../../.nvm/versions/node/v10.16.0/lib/node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
 var OVERLAY_ID = '__parcel__error__overlay__';
 var OldModule = module.bundle.Module;
@@ -38447,7 +38613,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "52555" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "58916" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

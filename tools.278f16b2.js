@@ -38174,7 +38174,7 @@ function PhaseViewer(_a) {
     checked: useCr,
     onChange: handleCheckboxChange('Cr')
   }), react_1["default"].createElement(Checkbox_1["default"], {
-    label: "Use Transform",
+    label: "Use Shift",
     checked: useTransform,
     onChange: handleTransformCheckboxChange
   }));
@@ -38248,8 +38248,8 @@ function MagnitudeViewer(_a) {
       setUseLog = _h[1];
 
   var _j = react_1.useState(true),
-      useTransform = _j[0],
-      setUseTransform = _j[1];
+      useShift = _j[0],
+      setuseShift = _j[1];
 
   var handleColorCheckboxChange = react_1.useCallback(function (channel) {
     return function () {
@@ -38314,8 +38314,8 @@ function MagnitudeViewer(_a) {
     setUseLog(!useLog);
   }, [useLog]);
   var handleTransformCheckboxChange = react_1.useCallback(function (ev) {
-    setUseTransform(!useTransform);
-  }, [useTransform]);
+    setuseShift(!useShift);
+  }, [useShift]);
   react_1.useEffect(function () {
     if (!canvasRef.current || !res || !ims || !res.length || !ims.length) {
       return;
@@ -38404,7 +38404,7 @@ function MagnitudeViewer(_a) {
     // D | A
 
 
-    if (useTransform) {
+    if (useShift) {
       var halfHeight = Math.floor(height / 2);
       var halfWidth = Math.floor(width / 2);
 
@@ -38428,7 +38428,7 @@ function MagnitudeViewer(_a) {
 
     context.clearRect(0, 0, width, height);
     context.putImageData(imageData, 0, 0);
-  }, [canvasRef, ims, res, useLog, useTransform, useR, useG, useB, useY, useCb, useCr]);
+  }, [canvasRef, ims, res, useLog, useShift, useR, useG, useB, useY, useCb, useCr]);
   return react_1["default"].createElement(Viewer_1["default"], {
     title: "Magnitude"
   }, react_1["default"].createElement(Canvas_1["default"], {
@@ -38470,8 +38470,8 @@ function MagnitudeViewer(_a) {
     checked: useLog,
     onChange: handleLogCheckboxChange
   }), react_1["default"].createElement(Checkbox_1["default"], {
-    label: "Use Transform",
-    checked: useTransform,
+    label: "Use Shift",
+    checked: useShift,
     onChange: handleTransformCheckboxChange
   }));
 }
@@ -38602,7 +38602,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "52555" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "58916" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
