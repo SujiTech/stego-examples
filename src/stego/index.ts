@@ -4,7 +4,7 @@ import { hashCode, rgb2yuv, yuv2rgb } from '../helpers';
 import { dct, idct } from '../dct';
 
 export enum TrasnformAlgorithm {
-  DCT = 'DCT',
+  DCT2D = '2D-DCT',
   FDCT8 = 'FDCT8',
   FDCTLEE = 'FDCTLEE',
   FFT1D = '1D-FFT',
@@ -43,9 +43,9 @@ export function rgbBlocks(b1: number[], b2: number[], b3: number[]) {
   }
 }
 
-export function getIndexOfSize(size: number, algorithm: TrasnformAlgorithm) {
+export function getIndex(size: number, algorithm: TrasnformAlgorithm) {
   switch (algorithm) {
-    case TrasnformAlgorithm.DCT:
+    case TrasnformAlgorithm.DCT2D:
       return 0;
     case TrasnformAlgorithm.FFT1D:
       return (size * size) / 2 + size / 2; // center
@@ -212,7 +212,7 @@ export function getBit(
 ) {
   transform(reBlock, imBlock, algorithm, size);
   return Math.abs(
-    Math.round(reBlock[getIndexOfSize(size, algorithm)] / tolerance) % 2
+    Math.round(reBlock[getIndex(size, algorithm)] / tolerance) % 2
   );
 }
 
@@ -227,7 +227,7 @@ export function setBit(
 ) {
   transform(reBlock, imBlock, algorithm, size);
 
-  const i = getIndexOfSize(size, algorithm);
+  const i = getIndex(size, algorithm);
   const v = Math.floor(reBlock[i] / tolerance);
 
   if (bit[0]) {
@@ -245,7 +245,7 @@ export function transform(
   size: number
 ) {
   switch (algorithm) {
-    case TrasnformAlgorithm.DCT:
+    case TrasnformAlgorithm.DCT2D:
       shiftBlock(re);
       dct(re, size);
       break;
@@ -275,7 +275,7 @@ export function inverseTransform(
   size: number
 ) {
   switch (algorithm) {
-    case TrasnformAlgorithm.DCT:
+    case TrasnformAlgorithm.DCT2D:
       idct(re, size);
       unshiftBlock(re);
       break;

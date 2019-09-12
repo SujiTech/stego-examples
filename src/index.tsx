@@ -43,7 +43,7 @@ function App() {
           height={height}
           res={res}
           ims={ims}
-          algorithm={TrasnformAlgorithm.DCT}
+          algorithm={TrasnformAlgorithm.DCT2D}
         />
       </Container>
     </>
