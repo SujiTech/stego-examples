@@ -27,6 +27,7 @@ npm run page // build and publish to gh-pages
 
 - FFT1D
 - FFT2D
+- DCT2D
 
 ## Refs
 
