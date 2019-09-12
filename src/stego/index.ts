@@ -1,21 +1,23 @@
 import FFT from '../fft';
 import { fastDct8, fastDctLee } from '../fast-dct';
 import { hashCode, rgb2yuv, yuv2rgb } from '../helpers';
+import { dct, idct } from '../dct';
 
 export enum TrasnformAlgorithm {
+  DCT = 'DCT',
   FDCT8 = 'FDCT8',
   FDCTLEE = 'FDCTLEE',
   FFT1D = '1D-FFT',
   FFT2D = '2D-FFT',
 }
 
-export function shiftRgbBlock(block: number[]) {
+export function shiftBlock(block: number[]) {
   block.forEach((n, i) => {
     block[i] = n - 128;
   });
 }
 
-export function unshifitRgbBlock(block: number[]) {
+export function unshiftBlock(block: number[]) {
   block.forEach((n, i) => {
     block[i] = n + 128;
   });
@@ -43,6 +45,8 @@ export function rgbBlocks(b1: number[], b2: number[], b3: number[]) {
 
 export function getIndexOfSize(size: number, algorithm: TrasnformAlgorithm) {
   switch (algorithm) {
+    case TrasnformAlgorithm.DCT:
+      return 0;
     case TrasnformAlgorithm.FFT1D:
       return (size * size) / 2 + size / 2; // center
     case TrasnformAlgorithm.FFT2D:
@@ -207,9 +211,8 @@ export function getBit(
   algorithm: TrasnformAlgorithm
 ) {
   transform(reBlock, imBlock, algorithm, size);
-  return (
-    Math.round(Math.abs(reBlock[getIndexOfSize(size, algorithm)]) / tolerance) %
-    2
+  return Math.abs(
+    Math.round(reBlock[getIndexOfSize(size, algorithm)] / tolerance) % 2
   );
 }
 
@@ -232,17 +235,20 @@ export function setBit(
   } else {
     reBlock[i] = v % 2 === 1 ? (v - 1) * tolerance : v * tolerance;
   }
-  inverseTransform(reBlock, imBlock, algorithm);
-  return reBlock[i];
+  inverseTransform(reBlock, imBlock, algorithm, size);
 }
 
-function transform(
+export function transform(
   re: number[],
   im: number[],
   algorithm: TrasnformAlgorithm,
   size: number
 ) {
   switch (algorithm) {
+    case TrasnformAlgorithm.DCT:
+      shiftBlock(re);
+      dct(re, size);
+      break;
     case TrasnformAlgorithm.FDCT8:
       fastDct8.transform(re);
       break;
@@ -262,12 +268,17 @@ function transform(
   }
 }
 
-function inverseTransform(
+export function inverseTransform(
   re: number[],
   im: number[],
-  algorithm: TrasnformAlgorithm
+  algorithm: TrasnformAlgorithm,
+  size: number
 ) {
   switch (algorithm) {
+    case TrasnformAlgorithm.DCT:
+      idct(re, size);
+      unshiftBlock(re);
+      break;
     case TrasnformAlgorithm.FDCT8:
       fastDct8.inverseTransform(re);
       break;

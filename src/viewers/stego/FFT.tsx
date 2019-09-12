@@ -32,39 +32,35 @@ function RGBViewer({ width, height, res, ims, algorithm }: CanvasProps) {
   const [sot, setSot] = useState(16); // size of tolerance
 
   const handleTextChange = useCallback(
-    ({ currentTarget }: ChangeEvent<HTMLInputElement>) => {
-      setText(currentTarget.value);
-    },
+    ({ currentTarget }: ChangeEvent<HTMLInputElement>) =>
+      setText(currentTarget.value),
     []
   );
   const handleCopiesChange = useCallback(
-    ({ currentTarget }: ChangeEvent<HTMLInputElement>) => {
-      setNoc(parseInt(currentTarget.value, 10));
-    },
+    ({ currentTarget }: ChangeEvent<HTMLInputElement>) =>
+      setNoc(parseInt(currentTarget.value, 10)),
     []
   );
   const handlePwdChange = useCallback(
-    ({ currentTarget }: ChangeEvent<HTMLInputElement>) => {
-      setPwd(currentTarget.value);
-    },
+    ({ currentTarget }: ChangeEvent<HTMLInputElement>) =>
+      setPwd(currentTarget.value),
     []
   );
 
   const handleToleranceChange = useCallback(
-    ({ currentTarget }: ChangeEvent<HTMLInputElement>) => {
-      setSot(parseInt(currentTarget.value, 10));
-    },
+    ({ currentTarget }: ChangeEvent<HTMLInputElement>) =>
+      setSot(parseInt(currentTarget.value, 10)),
     []
   );
   const handleSizeChange = useCallback(
-    ({ currentTarget }: ChangeEvent<HTMLInputElement>) => {
-      setSob(parseInt(currentTarget.value, 10));
-    },
+    ({ currentTarget }: ChangeEvent<HTMLInputElement>) =>
+      setSob(parseInt(currentTarget.value, 10)),
     []
   );
-  const handleRandomCheckboxChange = useCallback(() => {
-    setUseRandom(!useRandom);
-  }, [useRandom]);
+  const handleRandomCheckboxChange = useCallback(
+    () => setUseRandom(!useRandom),
+    [useRandom]
+  );
 
   const handleWriteButtonClick = useCallback(() => {
     setError('');
@@ -105,8 +101,7 @@ function RGBViewer({ width, height, res, ims, algorithm }: CanvasProps) {
     const context = canvasRef.current.getContext('2d');
     const imageData = context.getImageData(0, 0, width, height);
 
-    // current bit position
-    let j = 0;
+    let j = 0; // current bit position
     const length = rReBlocks.length;
     const reChannels = [rReBlocks, gReBlocks, bReBlocks];
     const imChannels = [rImBlocks, gImBlocks, bImBlocks];

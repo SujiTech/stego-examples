@@ -38,6 +38,13 @@ function App() {
           ims={ims}
           algorithm={TrasnformAlgorithm.FFT2D}
         />
+        <FFTViewer
+          width={width}
+          height={height}
+          res={res}
+          ims={ims}
+          algorithm={TrasnformAlgorithm.DCT}
+        />
       </Container>
     </>
   );
