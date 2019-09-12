@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import ReactDOM from 'react-dom';
 import Container from './components/Container';
-import FFTViewer from './viewers/stego/FFT';
+import RGBViewer from './viewers/stego/RGB';
 import Picker, { PickerData } from './components/Picker';
 import { TrasnformAlgorithm } from './stego';
 
@@ -24,21 +24,21 @@ function App() {
     <>
       <Picker onChange={onPickerChange} />
       <Container>
-        <FFTViewer
+        <RGBViewer
           width={width}
           height={height}
           res={res}
           ims={ims}
           algorithm={TrasnformAlgorithm.FFT1D}
         />
-        <FFTViewer
+        <RGBViewer
           width={width}
           height={height}
           res={res}
           ims={ims}
           algorithm={TrasnformAlgorithm.FFT2D}
         />
-        <FFTViewer
+        <RGBViewer
           width={width}
           height={height}
           res={res}
