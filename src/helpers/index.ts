@@ -39,21 +39,20 @@ export function shuffle(
   }
 }
 
-export function unshuffle<T>(nums: number[], seed: number[]) {
+export function unshuffle(nums: number[], seed: number[]) {
   return shuffle(nums, seed, true);
 }
 
 // more:
 // https://werxltd.com/wp/2010/05/13/javascript-implementation-of-javas-string-hashcode-method/
 
-export function hash(input: number) {
-  const str = String(input);
-  const len = str.length;
+export function hash(input: string) {
+  const len = input.length;
   let code = 0;
 
   if (len === 0) return code;
   for (let i = 0; i < len; i += 1) {
-    const char = str.charCodeAt(i);
+    const char = input.charCodeAt(i);
 
     code = (code << 5) - code + char;
     code = code & code; // Convert to 32bit integer
@@ -61,9 +60,9 @@ export function hash(input: number) {
   return code;
 }
 
-export function hashCode(previousCode: number, mod: number, inArray: number[]) {
+export function hashCode(input: string, mod: number, inArray: number[]) {
   let prob = 1;
-  let code = hash(previousCode);
+  let code = hash(input);
   let index = Math.abs(code) % mod;
 
   while (inArray[index]) {
@@ -71,5 +70,5 @@ export function hashCode(previousCode: number, mod: number, inArray: number[]) {
     prob = prob > mod / 2 ? 1 : prob + 1;
   }
   inArray[index] = 1;
-  return [index, code];
+  return [index, String(code)] as const;
 }

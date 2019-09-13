@@ -43,17 +43,68 @@ export function rgbBlocks(b1: number[], b2: number[], b3: number[]) {
   }
 }
 
-export function getIndex(size: number, algorithm: TrasnformAlgorithm) {
+let previousIndex = -1;
+let previousPosition = -1;
+let previousCode = '';
+
+export function getDynamicPositionInBlock(
+  algorithm: TrasnformAlgorithm,
+  pwd: string,
+  index: number,
+  channel: number,
+  size: number
+) {
+  // same position for every channels in same block
+  if (previousIndex === index) {
+    return previousPosition;
+  }
+
+  // reset env variables to initial value
+  if (index === 0) {
+    previousIndex = -1;
+    previousPosition = -1;
+    previousCode = '';
+  }
+
+  [previousPosition, previousCode] = hashCode(
+    `${pwd}_${index}_${channel}_${previousCode}`,
+    size * size - (size * size) / 4,
+    []
+  );
+  previousIndex = index;
+
+  const currentPosition = previousPosition + (size * size) / 4;
+
+  previousPosition = currentPosition;
+  return currentPosition;
+}
+
+export function getStaticPositionInBlock(
+  algorithm: TrasnformAlgorithm,
+  size: number
+) {
   switch (algorithm) {
     case TrasnformAlgorithm.DCT2D:
       return 0;
     case TrasnformAlgorithm.FFT1D:
-      return (size * size) / 2 + size / 2; // center
+      return (size * size) / 2 + size / 2;
     case TrasnformAlgorithm.FFT2D:
-      return 0; // left-top corner
+      return 0;
     default:
       return size * size - 1; // right-bottom corner
   }
+}
+
+export function getPositionInBlock(
+  algorithm: TrasnformAlgorithm,
+  pwd: string,
+  index: number,
+  channel: number,
+  size: number
+) {
+  return pwd && algorithm === TrasnformAlgorithm.FFT1D
+    ? getDynamicPositionInBlock(algorithm, pwd, index, channel, size)
+    : getStaticPositionInBlock(algorithm, size);
 }
 
 export function divideBlocks(
@@ -163,7 +214,7 @@ export function generateBits(length: number) {
 export function writeBits(dest: number[], ...source: number[][]) {
   const inArray: number[] = [];
   let index;
-  let code = 643575433;
+  let code = '643575433';
 
   for (let i = 0; i < source.length; i += 1) {
     const bits = source[i];
@@ -180,7 +231,7 @@ export function readBits(dest: number[]) {
   const bits: number[] = [];
   const inArray: number[] = [];
   let index;
-  let code = 643575433;
+  let code = '643575433';
 
   for (let i = 0; i < dest.length; i += 1) {
     [index, code] = hashCode(code, dest.length, inArray);
@@ -205,35 +256,39 @@ export function mergeBits(dest: number[], ...source: number[][]) {
 export function getBit(
   reBlock: number[],
   imBlock: number[],
+  pwd: string,
   index: number,
+  channel: number,
   size: number,
   tolerance: number,
   algorithm: TrasnformAlgorithm
 ) {
+  const position = getPositionInBlock(algorithm, pwd, index, channel, size);
+
   transform(reBlock, imBlock, algorithm, size);
-  return Math.abs(
-    Math.round(reBlock[getIndex(size, algorithm)] / tolerance) % 2
-  );
+  return Math.abs(Math.round(reBlock[position] / tolerance) % 2);
 }
 
 export function setBit(
   reBlock: number[],
   imBlock: number[],
   bit: number[],
+  pwd: string,
   index: number,
+  channel: number,
   size: number,
   tolerance: number,
   algorithm: TrasnformAlgorithm
 ) {
   transform(reBlock, imBlock, algorithm, size);
 
-  const i = getIndex(size, algorithm);
-  const v = Math.floor(reBlock[i] / tolerance);
+  const position = getPositionInBlock(algorithm, pwd, index, channel, size);
+  const v = Math.floor(reBlock[position] / tolerance);
 
   if (bit[0]) {
-    reBlock[i] = v % 2 === 1 ? v * tolerance : (v + 1) * tolerance;
+    reBlock[position] = v % 2 === 1 ? v * tolerance : (v + 1) * tolerance;
   } else {
-    reBlock[i] = v % 2 === 1 ? (v - 1) * tolerance : v * tolerance;
+    reBlock[position] = v % 2 === 1 ? (v - 1) * tolerance : v * tolerance;
   }
   inverseTransform(reBlock, imBlock, algorithm, size);
 }
@@ -286,9 +341,11 @@ export function inverseTransform(
       fastDctLee.inverseTransform(re);
       break;
     case TrasnformAlgorithm.FFT1D:
+      FFT.init(size);
       FFT.ifft1d(re, im);
       break;
     case TrasnformAlgorithm.FFT2D:
+      FFT.init(size);
       FFT.ifft2d(re, im);
       break;
     default:
@@ -298,11 +355,15 @@ export function inverseTransform(
 
 function clamp(v: number, min: number, max: number) {
   if (v < min) {
-    console.warn('clamp min');
+    if (Math.abs(v) > min + 5) {
+      console.warn(`clamp min: ${v}`);
+    }
     return min;
   }
   if (v > max) {
-    console.warn('clamp max');
+    if (Math.abs(v) > max + 5) {
+      console.warn(`clamp max: ${v}`);
+    }
     return max;
   }
   return v;

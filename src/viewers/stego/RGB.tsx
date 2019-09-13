@@ -20,12 +20,13 @@ import {
 } from '../../stego';
 import { CanvasProps } from '../../types';
 import Checkbox from '../../components/Checkbox';
+import { hashCode } from '../../helpers';
 
 function RGBViewer({ width, height, res, ims, algorithm }: CanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [useRandom, setUseRandom] = useState(false);
-  const [text, setText] = useState('hello');
-  const [pwd, setPwd] = useState('hello');
+  const [text, setText] = useState('text');
+  const [pwd, setPwd] = useState('password');
   const [error, setError] = useState('');
   const [noc, setNoc] = useState(5); // num of copies
   const [sob, setSob] = useState(8); // size of blocks
@@ -106,13 +107,18 @@ function RGBViewer({ width, height, res, ims, algorithm }: CanvasProps) {
     const reChannels = [rReBlocks, gReBlocks, bReBlocks];
     const imChannels = [rImBlocks, gImBlocks, bImBlocks];
 
+    console.log('write:');
+    console.log(bits);
+
     for (let i = 0; i < length; i += 1) {
       for (let c = 0; c < 3; c += 1) {
         setBit(
           reChannels[c][i],
           imChannels[c][i],
           bits.slice(j, j + 1),
+          useRandom ? pwd : '',
           i,
+          c,
           sob,
           sot,
           algorithm
@@ -124,7 +130,7 @@ function RGBViewer({ width, height, res, ims, algorithm }: CanvasProps) {
 
     // draw
     context.putImageData(imageData, 0, 0);
-  }, [canvasRef, res, ims, text, noc, sob, sot]);
+  }, [canvasRef, res, ims, text, pwd, noc, sob, sot, useRandom]);
 
   const handleReadButtonClick = useCallback(() => {
     if (!canvasRef.current || !res || !ims || !res.length || !ims.length) {
@@ -138,7 +144,7 @@ function RGBViewer({ width, height, res, ims, algorithm }: CanvasProps) {
     const gImBlocks = divideBlocks(width, height, sob, ims[1]);
     const bImBlocks = divideBlocks(width, height, sob, ims[2]);
 
-    const bits = [];
+    const bits: number[] = [];
     const length = rReBlocks.length;
     const reChannels = [rReBlocks, gReBlocks, bReBlocks];
     const imChannels = [rImBlocks, gImBlocks, bImBlocks];
@@ -146,14 +152,26 @@ function RGBViewer({ width, height, res, ims, algorithm }: CanvasProps) {
     for (let i = 0; i < length; i += 1) {
       for (let c = 0; c < 3; c += 1) {
         bits.push(
-          getBit(reChannels[c][i], imChannels[c][i], i, sob, sot, algorithm)
+          getBit(
+            reChannels[c][i],
+            imChannels[c][i],
+            useRandom ? pwd : '',
+            i,
+            c,
+            sob,
+            sot,
+            algorithm
+          )
         );
       }
     }
 
+    console.log('read:');
+    console.log(bits);
+
     // update text
     setText(bits2str(bits, noc));
-  }, [canvasRef, res, ims, noc, sob, sot]);
+  }, [canvasRef, res, ims, pwd, noc, sob, sot, useRandom]);
 
   useEffect(() => {
     if (!canvasRef.current || !res || !ims || !res.length || !ims.length) {
