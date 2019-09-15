@@ -30657,13 +30657,12 @@ exports.unshuffle = unshuffle; // more:
 // https://werxltd.com/wp/2010/05/13/javascript-implementation-of-javas-string-hashcode-method/
 
 function hash(input) {
-  var str = String(input);
-  var len = str.length;
+  var len = input.length;
   var code = 0;
   if (len === 0) return code;
 
   for (var i = 0; i < len; i += 1) {
-    var char = str.charCodeAt(i);
+    var char = input.charCodeAt(i);
     code = (code << 5) - code + char;
     code = code & code; // Convert to 32bit integer
   }
@@ -30673,9 +30672,9 @@ function hash(input) {
 
 exports.hash = hash;
 
-function hashCode(previousCode, mod, inArray) {
+function hashCode(input, mod, inArray) {
   var prob = 1;
-  var code = hash(previousCode);
+  var code = hash(input);
   var index = Math.abs(code) % mod;
 
   while (inArray[index]) {
@@ -30684,7 +30683,7 @@ function hashCode(previousCode, mod, inArray) {
   }
 
   inArray[index] = 1;
-  return [index, code];
+  return [index, String(code)];
 }
 
 exports.hashCode = hashCode;
@@ -37272,7 +37271,7 @@ var Checkbox = function Checkbox(_a) {
 };
 
 exports["default"] = Checkbox;
-},{"react":"node_modules/react/index.js"}],"src/viewers/original/RGBViewer.tsx":[function(require,module,exports) {
+},{"react":"node_modules/react/index.js"}],"src/viewers/original/RGB.tsx":[function(require,module,exports) {
 "use strict";
 
 var __importStar = this && this.__importStar || function (mod) {
@@ -37392,7 +37391,7 @@ function RGBViewer(_a) {
 }
 
 exports["default"] = RGBViewer;
-},{"react":"node_modules/react/index.js","../../components/Viewer":"src/components/Viewer.tsx","../../components/Canvas":"src/components/Canvas.ts","../../components/Checkbox":"src/components/Checkbox.tsx"}],"src/viewers/original/YUVViewer.tsx":[function(require,module,exports) {
+},{"react":"node_modules/react/index.js","../../components/Viewer":"src/components/Viewer.tsx","../../components/Canvas":"src/components/Canvas.ts","../../components/Checkbox":"src/components/Checkbox.tsx"}],"src/viewers/original/YUV.tsx":[function(require,module,exports) {
 "use strict";
 
 var __importStar = this && this.__importStar || function (mod) {
@@ -38506,9 +38505,9 @@ var Picker_1 = __importDefault(require("./components/Picker"));
 
 var Container_1 = __importDefault(require("./components/Container"));
 
-var RGBViewer_1 = __importDefault(require("./viewers/original/RGBViewer"));
+var RGB_1 = __importDefault(require("./viewers/original/RGB"));
 
-var YUVViewer_1 = __importDefault(require("./viewers/original/YUVViewer"));
+var YUV_1 = __importDefault(require("./viewers/original/YUV"));
 
 var BlockViewer_1 = __importDefault(require("./viewers/BlockViewer"));
 
@@ -38545,12 +38544,12 @@ function App() {
   }, []);
   return react_1["default"].createElement(react_1["default"].Fragment, null, react_1["default"].createElement(Picker_1["default"], {
     onChange: onPickerChange
-  }), react_1["default"].createElement(Container_1["default"], null, react_1["default"].createElement(RGBViewer_1["default"], {
+  }), react_1["default"].createElement(Container_1["default"], null, react_1["default"].createElement(RGB_1["default"], {
     width: width,
     height: height,
     res: res,
     ims: ims
-  }), react_1["default"].createElement(YUVViewer_1["default"], {
+  }), react_1["default"].createElement(YUV_1["default"], {
     width: width,
     height: height,
     res: res,
@@ -38574,7 +38573,7 @@ function App() {
 }
 
 react_dom_1["default"].render(react_1["default"].createElement(App, null), document.getElementById('root'));
-},{"react":"node_modules/react/index.js","react-dom":"node_modules/react-dom/index.js","./components/Picker":"src/components/Picker.tsx","./components/Container":"src/components/Container.ts","./viewers/original/RGBViewer":"src/viewers/original/RGBViewer.tsx","./viewers/original/YUVViewer":"src/viewers/original/YUVViewer.tsx","./viewers/BlockViewer":"src/viewers/BlockViewer.tsx","./viewers/PhaseViewer":"src/viewers/PhaseViewer.tsx","./viewers/MagnitudeViewer":"src/viewers/MagnitudeViewer.tsx"}],"../../.nvm/versions/node/v10.16.0/lib/node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
+},{"react":"node_modules/react/index.js","react-dom":"node_modules/react-dom/index.js","./components/Picker":"src/components/Picker.tsx","./components/Container":"src/components/Container.ts","./viewers/original/RGB":"src/viewers/original/RGB.tsx","./viewers/original/YUV":"src/viewers/original/YUV.tsx","./viewers/BlockViewer":"src/viewers/BlockViewer.tsx","./viewers/PhaseViewer":"src/viewers/PhaseViewer.tsx","./viewers/MagnitudeViewer":"src/viewers/MagnitudeViewer.tsx"}],"../../.nvm/versions/node/v10.16.0/lib/node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
 var OVERLAY_ID = '__parcel__error__overlay__';
 var OldModule = module.bundle.Module;
@@ -38602,7 +38601,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "58916" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "57211" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

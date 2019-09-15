@@ -37639,13 +37639,12 @@ exports.unshuffle = unshuffle; // more:
 // https://werxltd.com/wp/2010/05/13/javascript-implementation-of-javas-string-hashcode-method/
 
 function hash(input) {
-  var str = String(input);
-  var len = str.length;
+  var len = input.length;
   var code = 0;
   if (len === 0) return code;
 
   for (var i = 0; i < len; i += 1) {
-    var char = str.charCodeAt(i);
+    var char = input.charCodeAt(i);
     code = (code << 5) - code + char;
     code = code & code; // Convert to 32bit integer
   }
@@ -37655,9 +37654,9 @@ function hash(input) {
 
 exports.hash = hash;
 
-function hashCode(previousCode, mod, inArray) {
+function hashCode(input, mod, inArray) {
   var prob = 1;
-  var code = hash(previousCode);
+  var code = hash(input);
   var index = Math.abs(code) % mod;
 
   while (inArray[index]) {
@@ -37666,7 +37665,7 @@ function hashCode(previousCode, mod, inArray) {
   }
 
   inArray[index] = 1;
-  return [index, code];
+  return [index, String(code)];
 }
 
 exports.hashCode = hashCode;
@@ -37761,7 +37760,7 @@ var dct_1 = require("../dct");
 var TrasnformAlgorithm;
 
 (function (TrasnformAlgorithm) {
-  TrasnformAlgorithm["DCT"] = "DCT";
+  TrasnformAlgorithm["DCT2D"] = "2D-DCT";
   TrasnformAlgorithm["FDCT8"] = "FDCT8";
   TrasnformAlgorithm["FDCTLEE"] = "FDCTLEE";
   TrasnformAlgorithm["FFT1D"] = "1D-FFT";
@@ -37809,19 +37808,44 @@ function rgbBlocks(b1, b2, b3) {
 }
 
 exports.rgbBlocks = rgbBlocks;
+var previousIndex = -1;
+var previousPosition = -1;
+var previousCode = '';
 
-function getIndexOfSize(size, algorithm) {
+function getDynamicPositionInBlock(algorithm, pwd, index, channel, size) {
+  var _a; // same position for every channels in same block
+
+
+  if (previousIndex === index) {
+    return previousPosition;
+  } // reset env variables to initial value
+
+
+  if (index === 0) {
+    previousIndex = -1;
+    previousPosition = -1;
+    previousCode = '';
+  }
+
+  _a = helpers_1.hashCode(pwd + "_" + index + "_" + channel + "_" + previousCode, size * size - size * size / 4, []), previousPosition = _a[0], previousCode = _a[1];
+  previousIndex = index;
+  var currentPosition = previousPosition + size * size / 4;
+  previousPosition = currentPosition;
+  return currentPosition;
+}
+
+exports.getDynamicPositionInBlock = getDynamicPositionInBlock;
+
+function getStaticPositionInBlock(algorithm, size) {
   switch (algorithm) {
-    case TrasnformAlgorithm.DCT:
+    case TrasnformAlgorithm.DCT2D:
       return 0;
 
     case TrasnformAlgorithm.FFT1D:
       return size * size / 2 + size / 2;
-    // center
 
     case TrasnformAlgorithm.FFT2D:
       return 0;
-    // left-top corner
 
     default:
       return size * size - 1;
@@ -37829,7 +37853,13 @@ function getIndexOfSize(size, algorithm) {
   }
 }
 
-exports.getIndexOfSize = getIndexOfSize;
+exports.getStaticPositionInBlock = getStaticPositionInBlock;
+
+function getPositionInBlock(algorithm, pwd, index, channel, size) {
+  return pwd && algorithm === TrasnformAlgorithm.FFT1D ? getDynamicPositionInBlock(algorithm, pwd, index, channel, size) : getStaticPositionInBlock(algorithm, size);
+}
+
+exports.getPositionInBlock = getPositionInBlock;
 
 function divideBlocks(width, height, size, data) {
   var blocks = [];
@@ -37951,7 +37981,7 @@ function writeBits(dest) {
 
   var inArray = [];
   var index;
-  var code = 643575433;
+  var code = '643575433';
 
   for (var i = 0; i < source.length; i += 1) {
     var bits = source[i];
@@ -37973,7 +38003,7 @@ function readBits(dest) {
   var bits = [];
   var inArray = [];
   var index;
-  var code = 643575433;
+  var code = '643575433';
 
   for (var i = 0; i < dest.length; i += 1) {
     _a = helpers_1.hashCode(code, dest.length, inArray), index = _a[0], code = _a[1];
@@ -38007,22 +38037,23 @@ function mergeBits(dest) {
 
 exports.mergeBits = mergeBits;
 
-function getBit(reBlock, imBlock, index, size, tolerance, algorithm) {
+function getBit(reBlock, imBlock, pwd, index, channel, size, tolerance, algorithm) {
+  var position = getPositionInBlock(algorithm, pwd, index, channel, size);
   transform(reBlock, imBlock, algorithm, size);
-  return Math.abs(Math.round(reBlock[getIndexOfSize(size, algorithm)] / tolerance) % 2);
+  return Math.abs(Math.round(reBlock[position] / tolerance) % 2);
 }
 
 exports.getBit = getBit;
 
-function setBit(reBlock, imBlock, bit, index, size, tolerance, algorithm) {
+function setBit(reBlock, imBlock, bit, pwd, index, channel, size, tolerance, algorithm) {
   transform(reBlock, imBlock, algorithm, size);
-  var i = getIndexOfSize(size, algorithm);
-  var v = Math.floor(reBlock[i] / tolerance);
+  var position = getPositionInBlock(algorithm, pwd, index, channel, size);
+  var v = Math.floor(reBlock[position] / tolerance);
 
   if (bit[0]) {
-    reBlock[i] = v % 2 === 1 ? v * tolerance : (v + 1) * tolerance;
+    reBlock[position] = v % 2 === 1 ? v * tolerance : (v + 1) * tolerance;
   } else {
-    reBlock[i] = v % 2 === 1 ? (v - 1) * tolerance : v * tolerance;
+    reBlock[position] = v % 2 === 1 ? (v - 1) * tolerance : v * tolerance;
   }
 
   inverseTransform(reBlock, imBlock, algorithm, size);
@@ -38032,7 +38063,7 @@ exports.setBit = setBit;
 
 function transform(re, im, algorithm, size) {
   switch (algorithm) {
-    case TrasnformAlgorithm.DCT:
+    case TrasnformAlgorithm.DCT2D:
       shiftBlock(re);
       dct_1.dct(re, size);
       break;
@@ -38064,7 +38095,7 @@ exports.transform = transform;
 
 function inverseTransform(re, im, algorithm, size) {
   switch (algorithm) {
-    case TrasnformAlgorithm.DCT:
+    case TrasnformAlgorithm.DCT2D:
       dct_1.idct(re, size);
       unshiftBlock(re);
       break;
@@ -38078,10 +38109,12 @@ function inverseTransform(re, im, algorithm, size) {
       break;
 
     case TrasnformAlgorithm.FFT1D:
+      fft_1["default"].init(size);
       fft_1["default"].ifft1d(re, im);
       break;
 
     case TrasnformAlgorithm.FFT2D:
+      fft_1["default"].init(size);
       fft_1["default"].ifft2d(re, im);
       break;
 
@@ -38094,12 +38127,18 @@ exports.inverseTransform = inverseTransform;
 
 function clamp(v, min, max) {
   if (v < min) {
-    console.warn('clamp min');
+    if (Math.abs(v) > min + 5) {
+      console.warn("clamp min: " + v);
+    }
+
     return min;
   }
 
   if (v > max) {
-    console.warn('clamp max');
+    if (Math.abs(v) > max + 5) {
+      console.warn("clamp max: " + v);
+    }
+
     return max;
   }
 
@@ -38198,11 +38237,11 @@ function RGBViewer(_a) {
       useRandom = _b[0],
       setUseRandom = _b[1];
 
-  var _c = react_1.useState('hello'),
+  var _c = react_1.useState('text'),
       text = _c[0],
       setText = _c[1];
 
-  var _d = react_1.useState('hello'),
+  var _d = react_1.useState('password'),
       pwd = _d[0],
       setPwd = _d[1];
 
@@ -38289,10 +38328,12 @@ function RGBViewer(_a) {
     var length = rReBlocks.length;
     var reChannels = [rReBlocks, gReBlocks, bReBlocks];
     var imChannels = [rImBlocks, gImBlocks, bImBlocks];
+    console.log('write:');
+    console.log(bits);
 
     for (var i = 0; i < length; i += 1) {
       for (var c = 0; c < 3; c += 1) {
-        stego_1.setBit(reChannels[c][i], imChannels[c][i], bits.slice(j, j + 1), i, sob, sot, algorithm);
+        stego_1.setBit(reChannels[c][i], imChannels[c][i], bits.slice(j, j + 1), useRandom ? pwd : '', i, c, sob, sot, algorithm);
         stego_1.setImage(reChannels[c][i], imageData, i, sob, c);
         j += 1;
       }
@@ -38300,7 +38341,7 @@ function RGBViewer(_a) {
 
 
     context.putImageData(imageData, 0, 0);
-  }, [canvasRef, res, ims, text, noc, sob, sot]);
+  }, [canvasRef, res, ims, text, pwd, noc, sob, sot, useRandom]);
   var handleReadButtonClick = react_1.useCallback(function () {
     if (!canvasRef.current || !res || !ims || !res.length || !ims.length) {
       return;
@@ -38319,13 +38360,15 @@ function RGBViewer(_a) {
 
     for (var i = 0; i < length; i += 1) {
       for (var c = 0; c < 3; c += 1) {
-        bits.push(stego_1.getBit(reChannels[c][i], imChannels[c][i], i, sob, sot, algorithm));
+        bits.push(stego_1.getBit(reChannels[c][i], imChannels[c][i], useRandom ? pwd : '', i, c, sob, sot, algorithm));
       }
-    } // update text
+    }
 
+    console.log('read:');
+    console.log(bits); // update text
 
     setText(stego_1.bits2str(bits, noc));
-  }, [canvasRef, res, ims, noc, sob, sot]);
+  }, [canvasRef, res, ims, pwd, noc, sob, sot, useRandom]);
   react_1.useEffect(function () {
     if (!canvasRef.current || !res || !ims || !res.length || !ims.length) {
       return;
@@ -38580,7 +38623,7 @@ function App() {
     height: height,
     res: res,
     ims: ims,
-    algorithm: stego_1.TrasnformAlgorithm.DCT
+    algorithm: stego_1.TrasnformAlgorithm.DCT2D
   })));
 }
 
@@ -38613,7 +38656,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "58916" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "57211" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
