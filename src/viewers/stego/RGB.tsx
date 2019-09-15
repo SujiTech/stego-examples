@@ -20,7 +20,6 @@ import {
 } from '../../stego';
 import { CanvasProps } from '../../types';
 import Checkbox from '../../components/Checkbox';
-import { hashCode } from '../../helpers';
 
 function RGBViewer({ width, height, res, ims, algorithm }: CanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
