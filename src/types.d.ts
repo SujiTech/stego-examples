@@ -8,3 +8,4 @@ interface CanvasProps {
   ims: number[][];
   algorithm?: TrasnformAlgorithm;
 }
+
