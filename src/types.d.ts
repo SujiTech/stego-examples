@@ -6,5 +6,5 @@ interface CanvasProps {
   height: number;
   res: number[][];
   ims: number[][];
-  algorithm: TrasnformAlgorithm;
+  algorithm?: TrasnformAlgorithm;
 }
