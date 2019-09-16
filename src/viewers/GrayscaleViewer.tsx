@@ -3,22 +3,26 @@ import Viewer from '../components/Viewer';
 import { CanvasProps } from '../types';
 import Checkbox from '../components/Checkbox';
 import Canvas from '../components/Canvas';
+import Input from '../components/Input';
+import { clamp } from '../helpers';
 
 export enum GrayscaleAlgorithm {
   AVERAGE = 'AVG',
   LUMINANCE = 'LUMA',
   LUMINANCE_II = 'LUMA_II',
   DESATURATION = 'DESATURATION',
-  MAX_DECOMPOSITION = 'MAX_DECOMPOSITION',
-  MIN_DECOMPOSITION = 'MIN_DECOMPOSITION',
-  MID_DECOMPOSITION = 'MID_DECOMPOSITION',
+  MAX_DECOMPOSITION = 'MAX_DE',
+  MIN_DECOMPOSITION = 'MIN_DE',
+  MID_DECOMPOSITION = 'MID_DE',
   SIGNLE_R = 'R',
   SIGNLE_G = 'G',
   SIGNLE_B = 'B',
+  SHADES = 'SHADES',
 }
 
 function GrayscaleViewer({ width, height, res, ims }: CanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [shades, setShades] = useState(2);
   const [algorithm, setAlgorithm] = useState<GrayscaleAlgorithm>(
     GrayscaleAlgorithm.AVERAGE
   );
@@ -32,6 +36,7 @@ function GrayscaleViewer({ width, height, res, ims }: CanvasProps) {
     const context = canvasRef.current.getContext('2d');
     const imageData = context.getImageData(0, 0, width, height);
     const length = width * height;
+    const factor = 255 / (clamp(shades, 2, 256) - 1);
 
     for (let i = 0; i < length; i += 1) {
       const r = res[0][i];
@@ -70,6 +75,9 @@ function GrayscaleViewer({ width, height, res, ims }: CanvasProps) {
         case GrayscaleAlgorithm.SIGNLE_B:
           gray = b;
           break;
+        case GrayscaleAlgorithm.SHADES:
+          gray = Math.floor((r + g + b) / 3 / factor + 0.5) * factor;
+          break;
       }
 
       imageData.data[i * 4] = gray;
@@ -81,17 +89,17 @@ function GrayscaleViewer({ width, height, res, ims }: CanvasProps) {
     // draw
     context.clearRect(0, 0, width, height);
     context.putImageData(imageData, 0, 0);
-  }, [canvasRef, algorithm, res]);
+  }, [canvasRef, algorithm, res, shades]);
 
   return (
     <Viewer title="Grayscale">
       <Canvas width={width} height={height} ref={canvasRef} />
-      {[
-        Object.keys(GrayscaleAlgorithm).map(k => {
-          const selectedAlgorithm =
-            GrayscaleAlgorithm[k as keyof typeof GrayscaleAlgorithm];
+      {Object.keys(GrayscaleAlgorithm).map(k => {
+        const selectedAlgorithm =
+          GrayscaleAlgorithm[k as keyof typeof GrayscaleAlgorithm];
 
-          return (
+        return (
+          <div key={selectedAlgorithm} style={{ display: 'flex' }}>
             <Checkbox
               type="radio"
               key={selectedAlgorithm}
@@ -99,9 +107,23 @@ function GrayscaleViewer({ width, height, res, ims }: CanvasProps) {
               checked={algorithm === selectedAlgorithm}
               onChange={() => setAlgorithm(selectedAlgorithm)}
             />
-          );
-        }),
-      ]}
+            {algorithm === GrayscaleAlgorithm.SHADES &&
+            selectedAlgorithm === GrayscaleAlgorithm.SHADES ? (
+              <Input
+                type="number"
+                label=""
+                placeholder="num of shades"
+                max="256"
+                min="2"
+                defaultValue="2"
+                onChange={({ currentTarget }) =>
+                  setShades(parseInt(currentTarget.value, 10))
+                }
+              />
+            ) : null}
+          </div>
+        );
+      })}
     </Viewer>
   );
 }

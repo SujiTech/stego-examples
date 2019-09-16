@@ -1,6 +1,6 @@
 import FFT from '../fft';
 import { fastDct8, fastDctLee } from '../fast-dct';
-import { hashCode, rgb2yuv, yuv2rgb } from '../helpers';
+import { hashCode, rgb2yuv, yuv2rgb, clamp } from '../helpers';
 import { dct, idct } from '../dct';
 
 export enum TrasnformAlgorithm {
@@ -351,22 +351,6 @@ export function inverseTransform(
     default:
       throw new Error(`unknown algorithm: ${algorithm}`);
   }
-}
-
-function clamp(v: number, min: number, max: number) {
-  if (v < min) {
-    if (Math.abs(v) > min + 5) {
-      console.warn(`clamp min: ${v}`);
-    }
-    return min;
-  }
-  if (v > max) {
-    if (Math.abs(v) > max + 5) {
-      console.warn(`clamp max: ${v}`);
-    }
-    return max;
-  }
-  return v;
 }
 
 export function setImage(

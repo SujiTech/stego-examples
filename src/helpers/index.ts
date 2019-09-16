@@ -72,3 +72,21 @@ export function hashCode(input: string, mod: number, inArray: number[]) {
   inArray[index] = 1;
   return [index, String(code)] as const;
 }
+
+// utils
+
+export function clamp(v: number, min: number, max: number) {
+  if (v < min) {
+    if (Math.abs(v) > min + 5) {
+      console.warn(`clamp min: ${v}`);
+    }
+    return min;
+  }
+  if (v > max) {
+    if (Math.abs(v) > max + 5) {
+      console.warn(`clamp max: ${v}`);
+    }
+    return max;
+  }
+  return v;
+}

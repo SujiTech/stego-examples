@@ -12,7 +12,7 @@ interface InputProps
 const Input: FunctionComponent<InputProps> = ({ label, ...restProps }) => {
   return (
     <label style={{ display: 'flex' }}>
-      <span style={{ flex: 1 }}>{label}</span>
+      {label ? <span style={{ flex: 1 }}>{label}</span> : null}
       <input {...restProps} />
     </label>
   );
