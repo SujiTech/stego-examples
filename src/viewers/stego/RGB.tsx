@@ -17,6 +17,7 @@ import {
   bits2str,
   generateBits,
   mergeBits,
+  TrasnformAlgorithm,
 } from '../../stego';
 import { CanvasProps } from '../../types';
 import Checkbox from '../../components/Checkbox';
@@ -239,11 +240,13 @@ function RGBViewer({ width, height, res, ims, algorithm }: CanvasProps) {
       <button onClick={handleWriteButtonClick}>Write</button>
       <button onClick={handleReadButtonClick}>Read</button>
       {error ? <span style={{ color: 'red' }}>{error}</span> : null}
-      <Checkbox
-        label="Use Random Block"
-        checked={useRandom}
-        onChange={handleRandomCheckboxChange}
-      />
+      {algorithm === TrasnformAlgorithm.FFT1D ? (
+        <Checkbox
+          label="Use Random Block"
+          checked={useRandom}
+          onChange={handleRandomCheckboxChange}
+        />
+      ) : null}
     </Viewer>
   );
 }
