@@ -37116,11 +37116,11 @@ var Input = function Input(_a) {
     style: {
       display: 'flex'
     }
-  }, react_1["default"].createElement("span", {
+  }, label ? react_1["default"].createElement("span", {
     style: {
       flex: 1
     }
-  }, label), react_1["default"].createElement("input", __assign({}, restProps)));
+  }, label) : null, react_1["default"].createElement("input", __assign({}, restProps)));
 };
 
 exports["default"] = Input;
@@ -37668,7 +37668,29 @@ function hashCode(input, mod, inArray) {
   return [index, String(code)];
 }
 
-exports.hashCode = hashCode;
+exports.hashCode = hashCode; // utils
+
+function clamp(v, min, max) {
+  if (v < min) {
+    if (Math.abs(v) > min + 5) {
+      console.warn("clamp min: " + v);
+    }
+
+    return min;
+  }
+
+  if (v > max) {
+    if (Math.abs(v) > max + 5) {
+      console.warn("clamp max: " + v);
+    }
+
+    return max;
+  }
+
+  return v;
+}
+
+exports.clamp = clamp;
 },{}],"src/dct/index.ts":[function(require,module,exports) {
 "use strict"; // MORE:
 // https://en.wikipedia.org/wiki/JPEG
@@ -38125,26 +38147,6 @@ function inverseTransform(re, im, algorithm, size) {
 
 exports.inverseTransform = inverseTransform;
 
-function clamp(v, min, max) {
-  if (v < min) {
-    if (Math.abs(v) > min + 5) {
-      console.warn("clamp min: " + v);
-    }
-
-    return min;
-  }
-
-  if (v > max) {
-    if (Math.abs(v) > max + 5) {
-      console.warn("clamp max: " + v);
-    }
-
-    return max;
-  }
-
-  return v;
-}
-
 function setImage(block, imageData, index, size, offset) {
   // const complement = block.reduce((acc, i) => (i > acc ? i : acc), 0) - 255;
   // const max = block.reduce((acc, i) => (i > acc ? i : acc), 0);
@@ -38155,7 +38157,7 @@ function setImage(block, imageData, index, size, offset) {
   for (var i = 0; i < block.length; i += 1) {
     var h2 = Math.floor(i / size);
     var w2 = i % size;
-    imageData.data[((h1 + h2) * width + w1 + w2) * 4 + offset] = clamp(Math.round(block[i]), 0, 255); // imageData.data[((h1 + h2) * width + w1 + w2) * 4 + offset] = Math.round(
+    imageData.data[((h1 + h2) * width + w1 + w2) * 4 + offset] = helpers_1.clamp(Math.round(block[i]), 0, 255); // imageData.data[((h1 + h2) * width + w1 + w2) * 4 + offset] = Math.round(
     //   (block[i] * 255) / max
     // );
     // imageData.data[((h1 + h2) * width + w1 + w2) * 4 + offset] = 255;
@@ -38436,11 +38438,11 @@ function RGBViewer(_a) {
     style: {
       color: 'red'
     }
-  }, error) : null, react_1["default"].createElement(Checkbox_1["default"], {
+  }, error) : null, algorithm === stego_1.TrasnformAlgorithm.FFT1D ? react_1["default"].createElement(Checkbox_1["default"], {
     label: "Use Random Block",
     checked: useRandom,
     onChange: handleRandomCheckboxChange
-  }));
+  }) : null);
 }
 
 exports["default"] = RGBViewer;
@@ -38656,7 +38658,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "60474" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "63657" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

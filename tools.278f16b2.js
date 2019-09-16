@@ -30686,7 +30686,29 @@ function hashCode(input, mod, inArray) {
   return [index, String(code)];
 }
 
-exports.hashCode = hashCode;
+exports.hashCode = hashCode; // utils
+
+function clamp(v, min, max) {
+  if (v < min) {
+    if (Math.abs(v) > min + 5) {
+      console.warn("clamp min: " + v);
+    }
+
+    return min;
+  }
+
+  if (v > max) {
+    if (Math.abs(v) > max + 5) {
+      console.warn("clamp max: " + v);
+    }
+
+    return max;
+  }
+
+  return v;
+}
+
+exports.clamp = clamp;
 },{}],"src/components/Picker.tsx":[function(require,module,exports) {
 "use strict";
 
@@ -37624,278 +37646,65 @@ function BlockViewer(_a) {
 }
 
 exports["default"] = BlockViewer;
-},{"react":"node_modules/react/index.js","../components/Viewer":"src/components/Viewer.tsx","../components/Canvas":"src/components/Canvas.ts"}],"src/fft/index.js":[function(require,module,exports) {
-/// fft.js
+},{"react":"node_modules/react/index.js","../components/Viewer":"src/components/Viewer.tsx","../components/Canvas":"src/components/Canvas.ts"}],"src/components/Input.tsx":[function(require,module,exports) {
+"use strict";
 
-/**
- * Fast Fourier Transform module
- * 1D-FFT/IFFT, 2D-FFT/IFFT (radix-2)
- */
-(function () {
-  var FFT; // top-level namespace
+var __assign = this && this.__assign || function () {
+  __assign = Object.assign || function (t) {
+    for (var s, i = 1, n = arguments.length; i < n; i++) {
+      s = arguments[i];
 
-  var _root = this; // reference to 'window' or 'global'
-
-
-  if (typeof exports !== 'undefined') {
-    FFT = exports; // for CommonJS
-  } else {
-    FFT = _root.FFT = {};
-  }
-
-  var version = {
-    release: '0.3.0',
-    date: '2013-03'
-  };
-
-  FFT.toString = function () {
-    return 'version ' + version.release + ', released ' + version.date;
-  }; // core operations
-
-
-  var _n = 0,
-      // order
-  _bitrev = null,
-      // bit reversal table
-  _cstb = null; // sin/cos table
-
-  var core = {
-    init: function init(n) {
-      if (n !== 0 && (n & n - 1) === 0) {
-        _n = n;
-
-        core._initArray();
-
-        core._makeBitReversalTable();
-
-        core._makeCosSinTable();
-      } else {
-        throw new Error('init: radix-2 required');
-      }
-    },
-    // 1D-FFT
-    fft1d: function fft1d(re, im) {
-      core.fft(re, im, 1);
-    },
-    // 1D-IFFT
-    ifft1d: function ifft1d(re, im) {
-      var n = 1 / _n;
-      core.fft(re, im, -1);
-
-      for (var i = 0; i < _n; i++) {
-        re[i] *= n;
-        im[i] *= n;
-      }
-    },
-    // 2D-FFT
-    fft2d: function fft2d(re, im) {
-      var tre = [],
-          tim = [],
-          i = 0; // x-axis
-
-      for (var y = 0; y < _n; y++) {
-        i = y * _n;
-
-        for (var x1 = 0; x1 < _n; x1++) {
-          tre[x1] = re[x1 + i];
-          tim[x1] = im[x1 + i];
-        }
-
-        core.fft1d(tre, tim);
-
-        for (var x2 = 0; x2 < _n; x2++) {
-          re[x2 + i] = tre[x2];
-          im[x2 + i] = tim[x2];
-        }
-      } // y-axis
-
-
-      for (var x = 0; x < _n; x++) {
-        for (var y1 = 0; y1 < _n; y1++) {
-          i = x + y1 * _n;
-          tre[y1] = re[i];
-          tim[y1] = im[i];
-        }
-
-        core.fft1d(tre, tim);
-
-        for (var y2 = 0; y2 < _n; y2++) {
-          i = x + y2 * _n;
-          re[i] = tre[y2];
-          im[i] = tim[y2];
-        }
-      }
-    },
-    // 2D-IFFT
-    ifft2d: function ifft2d(re, im) {
-      var tre = [],
-          tim = [],
-          i = 0; // x-axis
-
-      for (var y = 0; y < _n; y++) {
-        i = y * _n;
-
-        for (var x1 = 0; x1 < _n; x1++) {
-          tre[x1] = re[x1 + i];
-          tim[x1] = im[x1 + i];
-        }
-
-        core.ifft1d(tre, tim);
-
-        for (var x2 = 0; x2 < _n; x2++) {
-          re[x2 + i] = tre[x2];
-          im[x2 + i] = tim[x2];
-        }
-      } // y-axis
-
-
-      for (var x = 0; x < _n; x++) {
-        for (var y1 = 0; y1 < _n; y1++) {
-          i = x + y1 * _n;
-          tre[y1] = re[i];
-          tim[y1] = im[i];
-        }
-
-        core.ifft1d(tre, tim);
-
-        for (var y2 = 0; y2 < _n; y2++) {
-          i = x + y2 * _n;
-          re[i] = tre[y2];
-          im[i] = tim[y2];
-        }
-      }
-    },
-    // core operation of FFT
-    fft: function fft(re, im, inv) {
-      var d,
-          h,
-          ik,
-          m,
-          tmp,
-          wr,
-          wi,
-          xr,
-          xi,
-          n4 = _n >> 2; // bit reversal
-
-      for (var l = 0; l < _n; l++) {
-        m = _bitrev[l];
-
-        if (l < m) {
-          tmp = re[l];
-          re[l] = re[m];
-          re[m] = tmp;
-          tmp = im[l];
-          im[l] = im[m];
-          im[m] = tmp;
-        }
-      } // butterfly operation
-
-
-      for (var k = 1; k < _n; k <<= 1) {
-        h = 0;
-        d = _n / (k << 1);
-
-        for (var j = 0; j < k; j++) {
-          wr = _cstb[h + n4];
-          wi = inv * _cstb[h];
-
-          for (var i = j; i < _n; i += k << 1) {
-            ik = i + k;
-            xr = wr * re[ik] + wi * im[ik];
-            xi = wr * im[ik] - wi * re[ik];
-            re[ik] = re[i] - xr;
-            re[i] += xr;
-            im[ik] = im[i] - xi;
-            im[i] += xi;
-          }
-
-          h += d;
-        }
-      }
-    },
-    // initialize the array (supports TypedArray)
-    _initArray: function _initArray() {
-      if (typeof Uint8Array !== 'undefined') {
-        _bitrev = new Uint8Array(_n);
-      } else {
-        _bitrev = [];
-      }
-
-      if (typeof Float64Array !== 'undefined') {
-        _cstb = new Float64Array(_n * 1.25);
-      } else {
-        _cstb = [];
-      }
-    },
-    // zero padding
-    _paddingZero: function _paddingZero() {// TODO
-    },
-    // makes bit reversal table
-    _makeBitReversalTable: function _makeBitReversalTable() {
-      var i = 0,
-          j = 0,
-          k = 0;
-      _bitrev[0] = 0;
-
-      while (++i < _n) {
-        k = _n >> 1;
-
-        while (k <= j) {
-          j -= k;
-          k >>= 1;
-        }
-
-        j += k;
-        _bitrev[i] = j;
-      }
-    },
-    // makes trigonometiric function table
-    _makeCosSinTable: function _makeCosSinTable() {
-      var n2 = _n >> 1,
-          n4 = _n >> 2,
-          n8 = _n >> 3,
-          n2p4 = n2 + n4,
-          t = Math.sin(Math.PI / _n),
-          dc = 2 * t * t,
-          ds = Math.sqrt(dc * (2 - dc)),
-          c = _cstb[n4] = 1,
-          s = _cstb[0] = 0;
-      t = 2 * dc;
-
-      for (var i = 1; i < n8; i++) {
-        c -= dc;
-        dc += t * c;
-        s += ds;
-        ds -= t * s;
-        _cstb[i] = s;
-        _cstb[n4 - i] = c;
-      }
-
-      if (n8 !== 0) {
-        _cstb[n8] = Math.sqrt(0.5);
-      }
-
-      for (var j = 0; j < n4; j++) {
-        _cstb[n2 - j] = _cstb[j];
-      }
-
-      for (var k = 0; k < n2p4; k++) {
-        _cstb[k + n2] = -_cstb[k];
+      for (var p in s) {
+        if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
       }
     }
-  }; // aliases (public APIs)
 
-  var apis = ['init', 'fft1d', 'ifft1d', 'fft2d', 'ifft2d'];
+    return t;
+  };
 
-  for (var i = 0; i < apis.length; i++) {
-    FFT[apis[i]] = core[apis[i]];
+  return __assign.apply(this, arguments);
+};
+
+var __rest = this && this.__rest || function (s, e) {
+  var t = {};
+
+  for (var p in s) {
+    if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0) t[p] = s[p];
   }
 
-  FFT.fft = core.fft1d;
-  FFT.ifft = core.ifft1d;
-}).call(this);
-},{}],"src/viewers/PhaseViewer.tsx":[function(require,module,exports) {
+  if (s != null && typeof Object.getOwnPropertySymbols === "function") for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
+    if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i])) t[p[i]] = s[p[i]];
+  }
+  return t;
+};
+
+var __importDefault = this && this.__importDefault || function (mod) {
+  return mod && mod.__esModule ? mod : {
+    "default": mod
+  };
+};
+
+exports.__esModule = true;
+
+var react_1 = __importDefault(require("react"));
+
+var Input = function Input(_a) {
+  var label = _a.label,
+      restProps = __rest(_a, ["label"]);
+
+  return react_1["default"].createElement("label", {
+    style: {
+      display: 'flex'
+    }
+  }, label ? react_1["default"].createElement("span", {
+    style: {
+      flex: 1
+    }
+  }, label) : null, react_1["default"].createElement("input", __assign({}, restProps)));
+};
+
+exports["default"] = Input;
+},{"react":"node_modules/react/index.js"}],"src/viewers/GrayscaleViewer.tsx":[function(require,module,exports) {
 "use strict";
 
 var __importStar = this && this.__importStar || function (mod) {
@@ -37920,563 +37729,156 @@ var react_1 = __importStar(require("react"));
 
 var Viewer_1 = __importDefault(require("../components/Viewer"));
 
-var Canvas_1 = __importDefault(require("../components/Canvas"));
-
 var Checkbox_1 = __importDefault(require("../components/Checkbox"));
 
-var fft_1 = __importDefault(require("../fft"));
+var Canvas_1 = __importDefault(require("../components/Canvas"));
 
-function PhaseViewer(_a) {
+var Input_1 = __importDefault(require("../components/Input"));
+
+var helpers_1 = require("../helpers");
+
+var GrayscaleAlgorithm;
+
+(function (GrayscaleAlgorithm) {
+  GrayscaleAlgorithm["AVERAGE"] = "AVG";
+  GrayscaleAlgorithm["LUMINANCE"] = "LUMA";
+  GrayscaleAlgorithm["LUMINANCE_II"] = "LUMA_II";
+  GrayscaleAlgorithm["DESATURATION"] = "DESATURATION";
+  GrayscaleAlgorithm["MAX_DECOMPOSITION"] = "MAX_DE";
+  GrayscaleAlgorithm["MIN_DECOMPOSITION"] = "MIN_DE";
+  GrayscaleAlgorithm["MID_DECOMPOSITION"] = "MID_DE";
+  GrayscaleAlgorithm["SIGNLE_R"] = "R";
+  GrayscaleAlgorithm["SIGNLE_G"] = "G";
+  GrayscaleAlgorithm["SIGNLE_B"] = "B";
+  GrayscaleAlgorithm["SHADES"] = "SHADES";
+})(GrayscaleAlgorithm = exports.GrayscaleAlgorithm || (exports.GrayscaleAlgorithm = {}));
+
+function GrayscaleViewer(_a) {
   var width = _a.width,
       height = _a.height,
       res = _a.res,
       ims = _a.ims;
   var canvasRef = react_1.useRef(null);
 
-  var _b = react_1.useState(true),
-      useR = _b[0],
-      setUseR = _b[1];
+  var _b = react_1.useState(2),
+      shades = _b[0],
+      setShades = _b[1];
 
-  var _c = react_1.useState(false),
-      useG = _c[0],
-      setUseG = _c[1];
+  var _c = react_1.useState(GrayscaleAlgorithm.AVERAGE),
+      algorithm = _c[0],
+      setAlgorithm = _c[1];
 
-  var _d = react_1.useState(false),
-      useB = _d[0],
-      setUseB = _d[1];
-
-  var _e = react_1.useState(false),
-      useY = _e[0],
-      setUseY = _e[1];
-
-  var _f = react_1.useState(false),
-      useCb = _f[0],
-      setUseCb = _f[1];
-
-  var _g = react_1.useState(false),
-      useCr = _g[0],
-      setUseVCr = _g[1];
-
-  var _h = react_1.useState(true),
-      useTransform = _h[0],
-      setUseTransform = _h[1];
-
-  var handleCheckboxChange = react_1.useCallback(function (channel) {
-    return function () {
-      switch (channel) {
-        case 'R':
-          setUseR(true);
-          setUseG(false);
-          setUseB(false);
-          setUseY(false);
-          setUseCb(false);
-          setUseVCr(false);
-          break;
-
-        case 'G':
-          setUseR(false);
-          setUseG(true);
-          setUseB(false);
-          setUseY(false);
-          setUseCb(false);
-          setUseVCr(false);
-          break;
-
-        case 'B':
-          setUseR(false);
-          setUseG(false);
-          setUseB(true);
-          setUseY(false);
-          setUseCb(false);
-          setUseVCr(false);
-          break;
-
-        case 'Y':
-          setUseR(false);
-          setUseG(false);
-          setUseB(false);
-          setUseY(true);
-          setUseCb(false);
-          setUseVCr(false);
-          break;
-
-        case 'Cb':
-          setUseR(false);
-          setUseG(false);
-          setUseB(false);
-          setUseY(false);
-          setUseCb(true);
-          setUseVCr(false);
-          break;
-
-        case 'Cr':
-          setUseR(false);
-          setUseG(false);
-          setUseB(false);
-          setUseY(false);
-          setUseCb(false);
-          setUseVCr(true);
-          break;
-      }
-    };
-  }, [useR, useG, useB, useY, useCb, useCr]);
-  var handleTransformCheckboxChange = react_1.useCallback(function (ev) {
-    setUseTransform(!useTransform);
-  }, [useTransform]);
   react_1.useEffect(function () {
-    if (!canvasRef.current || !res || !ims || !res.length || !ims.length) {
+    if (!canvasRef.current || !res || !res.length) {
       return;
-    }
-
-    var re = function () {
-      if (useR) {
-        return res[0];
-      }
-
-      if (useG) {
-        return res[1];
-      }
-
-      if (useB) {
-        return res[2];
-      }
-
-      if (useY) {
-        return res[3];
-      }
-
-      if (useCb) {
-        return res[4];
-      }
-
-      return res[5];
-    }().slice();
-
-    var im = function () {
-      if (useR) {
-        return ims[0];
-      }
-
-      if (useG) {
-        return ims[1];
-      }
-
-      if (useB) {
-        return ims[2];
-      }
-
-      if (useY) {
-        return res[3];
-      }
-
-      if (useCb) {
-        return res[4];
-      }
-
-      return res[5];
-    }().slice();
-
-    fft_1["default"].init(width);
-    fft_1["default"].fft2d(re, im);
-    var maxPhase = Number.NEGATIVE_INFINITY;
-    var phasors = [];
-
-    for (var i = 0; i < width * height; i += 1) {
-      var reVal = re[i];
-      var imVal = im[i];
-      var phase = Math.atan2(imVal, reVal);
-
-      if (phase > maxPhase) {
-        maxPhase = phase;
-      }
-
-      phasors.push(phase);
     } // convert to gray range [0-256)
 
 
     var context = canvasRef.current.getContext('2d');
     var imageData = context.getImageData(0, 0, width, height);
+    var length = width * height;
+    var factor = 255 / (helpers_1.clamp(shades, 2, 256) - 1);
 
-    for (var i = 0; i < phasors.length; i += 1) {
-      var index = i * 4;
-      var color = Math.floor(phasors[i] * 256 / maxPhase);
-      imageData.data[index] = color;
-      imageData.data[index + 1] = color;
-      imageData.data[index + 2] = color;
-      imageData.data[index + 3] = 255;
-    } // A | D
-    // B | C
-    //
-    // C | B
-    // D | A
+    for (var i = 0; i < length; i += 1) {
+      var r = res[0][i];
+      var g = res[1][i];
+      var b = res[2][i];
+      var gray = 0;
 
+      switch (algorithm) {
+        case GrayscaleAlgorithm.AVERAGE:
+          gray = (r + g + b) / 3;
+          break;
 
-    if (useTransform) {
-      var halfHeight = Math.floor(height / 2);
-      var halfWidth = Math.floor(width / 2);
+        case GrayscaleAlgorithm.LUMINANCE:
+          gray = r * 0.3 + g * 0.59 + b * 0.11;
+          break;
 
-      for (var h = 0; h < halfHeight; h += 1) {
-        for (var w = 0; w < width; w += 1) {
-          var index = (h * width + w) * 4;
-          var flippedIndex = (w <= halfWidth ? (h + halfHeight) * width + w + halfWidth : (h + halfHeight) * width + w - halfWidth) * 4;
-          var tempR = imageData.data[index];
-          var tempG = imageData.data[index + 1];
-          var tempB = imageData.data[index + 2];
-          imageData.data[index] = imageData.data[flippedIndex];
-          imageData.data[index + 1] = imageData.data[flippedIndex + 1];
-          imageData.data[index + 2] = imageData.data[flippedIndex + 2];
-          imageData.data[flippedIndex] = tempR;
-          imageData.data[flippedIndex + 1] = tempG;
-          imageData.data[flippedIndex + 2] = tempB;
-        }
+        case GrayscaleAlgorithm.LUMINANCE_II:
+          gray = r * 0.2126 + g * 0.7152 + b * 0.0722;
+          break;
+
+        case GrayscaleAlgorithm.DESATURATION:
+          gray = (Math.max(r, g, b) + Math.min(r, g, b)) / 2;
+          break;
+
+        case GrayscaleAlgorithm.MAX_DECOMPOSITION:
+          gray = Math.max(r, g, b);
+          break;
+
+        case GrayscaleAlgorithm.MIN_DECOMPOSITION:
+          gray = Math.min(r, g, b);
+          break;
+
+        case GrayscaleAlgorithm.MID_DECOMPOSITION:
+          gray = [r, g, b].sort()[1];
+          break;
+
+        case GrayscaleAlgorithm.SIGNLE_R:
+          gray = r;
+          break;
+
+        case GrayscaleAlgorithm.SIGNLE_G:
+          gray = g;
+          break;
+
+        case GrayscaleAlgorithm.SIGNLE_B:
+          gray = b;
+          break;
+
+        case GrayscaleAlgorithm.SHADES:
+          gray = Math.floor((r + g + b) / 3 / factor + 0.5) * factor;
+          break;
       }
-    } // draw the spectrum
+
+      imageData.data[i * 4] = gray;
+      imageData.data[i * 4 + 1] = gray;
+      imageData.data[i * 4 + 2] = gray;
+      imageData.data[i * 4 + 3] = 255;
+    } // draw
 
 
     context.clearRect(0, 0, width, height);
     context.putImageData(imageData, 0, 0);
-  }, [canvasRef, res, ims, useTransform, useR, useG, useB, useY, useCb, useCr]);
+  }, [canvasRef, algorithm, res, shades]);
   return react_1["default"].createElement(Viewer_1["default"], {
-    title: "Phase"
+    title: "Grayscale"
   }, react_1["default"].createElement(Canvas_1["default"], {
     width: width,
     height: height,
     ref: canvasRef
-  }), react_1["default"].createElement(Checkbox_1["default"], {
-    type: "radio",
-    label: "R",
-    checked: useR,
-    onChange: handleCheckboxChange('R')
-  }), react_1["default"].createElement(Checkbox_1["default"], {
-    type: "radio",
-    label: "G",
-    checked: useG,
-    onChange: handleCheckboxChange('G')
-  }), react_1["default"].createElement(Checkbox_1["default"], {
-    type: "radio",
-    label: "B",
-    checked: useB,
-    onChange: handleCheckboxChange('B')
-  }), react_1["default"].createElement(Checkbox_1["default"], {
-    type: "radio",
-    label: "Y",
-    checked: useY,
-    onChange: handleCheckboxChange('Y')
-  }), react_1["default"].createElement(Checkbox_1["default"], {
-    type: "radio",
-    label: "Cb",
-    checked: useCb,
-    onChange: handleCheckboxChange('Cb')
-  }), react_1["default"].createElement(Checkbox_1["default"], {
-    type: "radio",
-    label: "Cr",
-    checked: useCr,
-    onChange: handleCheckboxChange('Cr')
-  }), react_1["default"].createElement(Checkbox_1["default"], {
-    label: "Use Shift",
-    checked: useTransform,
-    onChange: handleTransformCheckboxChange
+  }), Object.keys(GrayscaleAlgorithm).map(function (k) {
+    var selectedAlgorithm = GrayscaleAlgorithm[k];
+    return react_1["default"].createElement("div", {
+      key: selectedAlgorithm,
+      style: {
+        display: 'flex'
+      }
+    }, react_1["default"].createElement(Checkbox_1["default"], {
+      type: "radio",
+      key: selectedAlgorithm,
+      label: selectedAlgorithm,
+      checked: algorithm === selectedAlgorithm,
+      onChange: function onChange() {
+        return setAlgorithm(selectedAlgorithm);
+      }
+    }), algorithm === GrayscaleAlgorithm.SHADES && selectedAlgorithm === GrayscaleAlgorithm.SHADES ? react_1["default"].createElement(Input_1["default"], {
+      type: "number",
+      label: "",
+      placeholder: "num of shades",
+      max: "256",
+      min: "2",
+      defaultValue: "2",
+      onChange: function onChange(_a) {
+        var currentTarget = _a.currentTarget;
+        return setShades(parseInt(currentTarget.value, 10));
+      }
+    }) : null);
   }));
 }
 
-exports["default"] = PhaseViewer;
-},{"react":"node_modules/react/index.js","../components/Viewer":"src/components/Viewer.tsx","../components/Canvas":"src/components/Canvas.ts","../components/Checkbox":"src/components/Checkbox.tsx","../fft":"src/fft/index.js"}],"src/viewers/MagnitudeViewer.tsx":[function(require,module,exports) {
-"use strict";
-
-var __importStar = this && this.__importStar || function (mod) {
-  if (mod && mod.__esModule) return mod;
-  var result = {};
-  if (mod != null) for (var k in mod) {
-    if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
-  }
-  result["default"] = mod;
-  return result;
-};
-
-var __importDefault = this && this.__importDefault || function (mod) {
-  return mod && mod.__esModule ? mod : {
-    "default": mod
-  };
-};
-
-exports.__esModule = true;
-
-var react_1 = __importStar(require("react"));
-
-var Viewer_1 = __importDefault(require("../components/Viewer"));
-
-var Canvas_1 = __importDefault(require("../components/Canvas"));
-
-var Checkbox_1 = __importDefault(require("../components/Checkbox"));
-
-var fft_1 = __importDefault(require("../fft"));
-
-function MagnitudeViewer(_a) {
-  var width = _a.width,
-      height = _a.height,
-      res = _a.res,
-      ims = _a.ims;
-  var canvasRef = react_1.useRef(null);
-
-  var _b = react_1.useState(true),
-      useR = _b[0],
-      setUseR = _b[1];
-
-  var _c = react_1.useState(false),
-      useG = _c[0],
-      setUseG = _c[1];
-
-  var _d = react_1.useState(false),
-      useB = _d[0],
-      setUseB = _d[1];
-
-  var _e = react_1.useState(false),
-      useY = _e[0],
-      setUseY = _e[1];
-
-  var _f = react_1.useState(false),
-      useCb = _f[0],
-      setUseCb = _f[1];
-
-  var _g = react_1.useState(false),
-      useCr = _g[0],
-      setUseVCr = _g[1];
-
-  var _h = react_1.useState(true),
-      useLog = _h[0],
-      setUseLog = _h[1];
-
-  var _j = react_1.useState(true),
-      useShift = _j[0],
-      setuseShift = _j[1];
-
-  var handleColorCheckboxChange = react_1.useCallback(function (channel) {
-    return function () {
-      switch (channel) {
-        case 'R':
-          setUseR(true);
-          setUseG(false);
-          setUseB(false);
-          setUseY(false);
-          setUseCb(false);
-          setUseVCr(false);
-          break;
-
-        case 'G':
-          setUseR(false);
-          setUseG(true);
-          setUseB(false);
-          setUseY(false);
-          setUseCb(false);
-          setUseVCr(false);
-          break;
-
-        case 'B':
-          setUseR(false);
-          setUseG(false);
-          setUseB(true);
-          setUseY(false);
-          setUseCb(false);
-          setUseVCr(false);
-          break;
-
-        case 'Y':
-          setUseR(false);
-          setUseG(false);
-          setUseB(false);
-          setUseY(true);
-          setUseCb(false);
-          setUseVCr(false);
-          break;
-
-        case 'Cb':
-          setUseR(false);
-          setUseG(false);
-          setUseB(false);
-          setUseY(false);
-          setUseCb(true);
-          setUseVCr(false);
-          break;
-
-        case 'Cr':
-          setUseR(false);
-          setUseG(false);
-          setUseB(false);
-          setUseY(false);
-          setUseCb(false);
-          setUseVCr(true);
-          break;
-      }
-    };
-  }, [useR, useG, useB, useY, useCb, useCr]);
-  var handleLogCheckboxChange = react_1.useCallback(function (ev) {
-    setUseLog(!useLog);
-  }, [useLog]);
-  var handleTransformCheckboxChange = react_1.useCallback(function (ev) {
-    setuseShift(!useShift);
-  }, [useShift]);
-  react_1.useEffect(function () {
-    if (!canvasRef.current || !res || !ims || !res.length || !ims.length) {
-      return;
-    }
-
-    var re = function () {
-      if (useR) {
-        return res[0];
-      }
-
-      if (useG) {
-        return res[1];
-      }
-
-      if (useB) {
-        return res[2];
-      }
-
-      if (useY) {
-        return res[3];
-      }
-
-      if (useCb) {
-        return res[4];
-      }
-
-      return res[5];
-    }().slice();
-
-    var im = function () {
-      if (useR) {
-        return ims[0];
-      }
-
-      if (useG) {
-        return ims[1];
-      }
-
-      if (useB) {
-        return ims[2];
-      }
-
-      if (useY) {
-        return res[3];
-      }
-
-      if (useCb) {
-        return res[4];
-      }
-
-      return res[5];
-    }().slice();
-
-    fft_1["default"].init(width);
-    fft_1["default"].fft2d(re, im);
-    var maxAmplitude = Number.NEGATIVE_INFINITY;
-    var amplitudes = [];
-
-    for (var i = 0; i < width * height; i += 1) {
-      var reVal = re[i];
-      var imVal = im[i];
-      var amplitude = useLog ? Math.log(Math.sqrt(reVal * reVal + imVal * imVal)) : Math.sqrt(reVal * reVal + imVal * imVal);
-
-      if (amplitude > maxAmplitude) {
-        maxAmplitude = amplitude;
-      }
-
-      amplitudes.push(amplitude);
-    } // convert to gray range [0-256)
-
-
-    var context = canvasRef.current.getContext('2d');
-    var imageData = context.getImageData(0, 0, width, height);
-
-    for (var i = 0; i < amplitudes.length; i += 1) {
-      var index = i * 4;
-      var color = Math.floor(amplitudes[i] * 256 / maxAmplitude);
-      imageData.data[index] = color;
-      imageData.data[index + 1] = color;
-      imageData.data[index + 2] = color;
-      imageData.data[index + 3] = 255;
-    } // A | D
-    // B | C
-    //
-    // C | B
-    // D | A
-
-
-    if (useShift) {
-      var halfHeight = Math.floor(height / 2);
-      var halfWidth = Math.floor(width / 2);
-
-      for (var h = 0; h < halfHeight; h += 1) {
-        for (var w = 0; w < width; w += 1) {
-          var index = (h * width + w) * 4;
-          var flippedIndex = (w <= halfWidth ? (h + halfHeight) * width + w + halfWidth : (h + halfHeight) * width + w - halfWidth) * 4;
-          var tempR = imageData.data[index];
-          var tempG = imageData.data[index + 1];
-          var tempB = imageData.data[index + 2];
-          imageData.data[index] = imageData.data[flippedIndex];
-          imageData.data[index + 1] = imageData.data[flippedIndex + 1];
-          imageData.data[index + 2] = imageData.data[flippedIndex + 2];
-          imageData.data[flippedIndex] = tempR;
-          imageData.data[flippedIndex + 1] = tempG;
-          imageData.data[flippedIndex + 2] = tempB;
-        }
-      }
-    } // draw the spectrum
-
-
-    context.clearRect(0, 0, width, height);
-    context.putImageData(imageData, 0, 0);
-  }, [canvasRef, ims, res, useLog, useShift, useR, useG, useB, useY, useCb, useCr]);
-  return react_1["default"].createElement(Viewer_1["default"], {
-    title: "Magnitude"
-  }, react_1["default"].createElement(Canvas_1["default"], {
-    width: width,
-    height: height,
-    ref: canvasRef
-  }), react_1["default"].createElement(Checkbox_1["default"], {
-    type: "radio",
-    label: "R",
-    checked: useR,
-    onChange: handleColorCheckboxChange('R')
-  }), react_1["default"].createElement(Checkbox_1["default"], {
-    type: "radio",
-    label: "G",
-    checked: useG,
-    onChange: handleColorCheckboxChange('G')
-  }), react_1["default"].createElement(Checkbox_1["default"], {
-    type: "radio",
-    label: "B",
-    checked: useB,
-    onChange: handleColorCheckboxChange('B')
-  }), react_1["default"].createElement(Checkbox_1["default"], {
-    type: "radio",
-    label: "Y",
-    checked: useY,
-    onChange: handleColorCheckboxChange('Y')
-  }), react_1["default"].createElement(Checkbox_1["default"], {
-    type: "radio",
-    label: "Cb",
-    checked: useCb,
-    onChange: handleColorCheckboxChange('Cb')
-  }), react_1["default"].createElement(Checkbox_1["default"], {
-    type: "radio",
-    label: "Cr",
-    checked: useCr,
-    onChange: handleColorCheckboxChange('Cr')
-  }), react_1["default"].createElement(Checkbox_1["default"], {
-    label: "Use Logarithm",
-    checked: useLog,
-    onChange: handleLogCheckboxChange
-  }), react_1["default"].createElement(Checkbox_1["default"], {
-    label: "Use Shift",
-    checked: useShift,
-    onChange: handleTransformCheckboxChange
-  }));
-}
-
-exports["default"] = MagnitudeViewer;
-},{"react":"node_modules/react/index.js","../components/Viewer":"src/components/Viewer.tsx","../components/Canvas":"src/components/Canvas.ts","../components/Checkbox":"src/components/Checkbox.tsx","../fft":"src/fft/index.js"}],"src/tools.tsx":[function(require,module,exports) {
+exports["default"] = GrayscaleViewer;
+},{"react":"node_modules/react/index.js","../components/Viewer":"src/components/Viewer.tsx","../components/Checkbox":"src/components/Checkbox.tsx","../components/Canvas":"src/components/Canvas.ts","../components/Input":"src/components/Input.tsx","../helpers":"src/helpers/index.ts"}],"src/tools.tsx":[function(require,module,exports) {
 "use strict";
 
 var __importStar = this && this.__importStar || function (mod) {
@@ -38511,9 +37913,7 @@ var YUV_1 = __importDefault(require("./viewers/original/YUV"));
 
 var BlockViewer_1 = __importDefault(require("./viewers/BlockViewer"));
 
-var PhaseViewer_1 = __importDefault(require("./viewers/PhaseViewer"));
-
-var MagnitudeViewer_1 = __importDefault(require("./viewers/MagnitudeViewer"));
+var GrayscaleViewer_1 = __importDefault(require("./viewers/GrayscaleViewer"));
 
 function App() {
   var _a = react_1.useState([]),
@@ -38544,22 +37944,17 @@ function App() {
   }, []);
   return react_1["default"].createElement(react_1["default"].Fragment, null, react_1["default"].createElement(Picker_1["default"], {
     onChange: onPickerChange
-  }), react_1["default"].createElement(Container_1["default"], null, react_1["default"].createElement(RGB_1["default"], {
+  }), react_1["default"].createElement(Container_1["default"], null, react_1["default"].createElement(GrayscaleViewer_1["default"], {
+    width: width,
+    height: height,
+    res: res,
+    ims: ims
+  }), react_1["default"].createElement(RGB_1["default"], {
     width: width,
     height: height,
     res: res,
     ims: ims
   }), react_1["default"].createElement(YUV_1["default"], {
-    width: width,
-    height: height,
-    res: res,
-    ims: ims
-  }), react_1["default"].createElement(PhaseViewer_1["default"], {
-    width: width,
-    height: height,
-    res: res,
-    ims: ims
-  }), react_1["default"].createElement(MagnitudeViewer_1["default"], {
     width: width,
     height: height,
     res: res,
@@ -38573,7 +37968,7 @@ function App() {
 }
 
 react_dom_1["default"].render(react_1["default"].createElement(App, null), document.getElementById('root'));
-},{"react":"node_modules/react/index.js","react-dom":"node_modules/react-dom/index.js","./components/Picker":"src/components/Picker.tsx","./components/Container":"src/components/Container.ts","./viewers/original/RGB":"src/viewers/original/RGB.tsx","./viewers/original/YUV":"src/viewers/original/YUV.tsx","./viewers/BlockViewer":"src/viewers/BlockViewer.tsx","./viewers/PhaseViewer":"src/viewers/PhaseViewer.tsx","./viewers/MagnitudeViewer":"src/viewers/MagnitudeViewer.tsx"}],"../../.nvm/versions/node/v10.16.0/lib/node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
+},{"react":"node_modules/react/index.js","react-dom":"node_modules/react-dom/index.js","./components/Picker":"src/components/Picker.tsx","./components/Container":"src/components/Container.ts","./viewers/original/RGB":"src/viewers/original/RGB.tsx","./viewers/original/YUV":"src/viewers/original/YUV.tsx","./viewers/BlockViewer":"src/viewers/BlockViewer.tsx","./viewers/GrayscaleViewer":"src/viewers/GrayscaleViewer.tsx"}],"../../.nvm/versions/node/v10.16.0/lib/node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
 var OVERLAY_ID = '__parcel__error__overlay__';
 var OldModule = module.bundle.Module;
@@ -38601,7 +37996,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "60474" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "63657" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
