@@ -18,15 +18,20 @@ import {
   generateBits,
   mergeBits,
   TrasnformAlgorithm,
+  grayscaleBlock,
+  GrayscaleAlgorithm,
 } from '../../stego';
 import { CanvasProps } from '../../types';
 import Checkbox from '../../components/Checkbox';
+import { clamp } from '../../helpers';
 
 function RGBViewer({ width, height, res, ims, algorithm }: CanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [useRandom, setUseRandom] = useState(false);
+  const [useGrayscale, setUseGrayscale] = useState(false);
   const [text, setText] = useState('text');
   const [pwd, setPwd] = useState('password');
+  const [clip, setClip] = useState(15);
   const [error, setError] = useState('');
   const [noc, setNoc] = useState(5); // num of copies
   const [sob, setSob] = useState(8); // size of blocks
@@ -39,7 +44,7 @@ function RGBViewer({ width, height, res, ims, algorithm }: CanvasProps) {
   );
   const handleCopiesChange = useCallback(
     ({ currentTarget }: ChangeEvent<HTMLInputElement>) =>
-      setNoc(parseInt(currentTarget.value, 10)),
+      setNoc(clamp(parseInt(currentTarget.value, 10), 1, 9)),
     []
   );
   const handlePwdChange = useCallback(
@@ -47,20 +52,29 @@ function RGBViewer({ width, height, res, ims, algorithm }: CanvasProps) {
       setPwd(currentTarget.value),
     []
   );
+  const handleClipChange = useCallback(
+    ({ currentTarget }: ChangeEvent<HTMLInputElement>) =>
+      setClip(clamp(parseInt(currentTarget.value, 10), 0, 50)),
+    []
+  );
 
   const handleToleranceChange = useCallback(
     ({ currentTarget }: ChangeEvent<HTMLInputElement>) =>
-      setSot(parseInt(currentTarget.value, 10)),
+      setSot(clamp(parseInt(currentTarget.value, 10), 0, 128)),
     []
   );
   const handleSizeChange = useCallback(
     ({ currentTarget }: ChangeEvent<HTMLInputElement>) =>
-      setSob(parseInt(currentTarget.value, 10)),
+      setSob(clamp(parseInt(currentTarget.value, 10), 2, 256)),
     []
   );
   const handleRandomCheckboxChange = useCallback(
     () => setUseRandom(!useRandom),
     [useRandom]
+  );
+  const handleGrayscaleCheckboxChange = useCallback(
+    () => setUseGrayscale(!useGrayscale),
+    [useGrayscale]
   );
 
   const handleWriteButtonClick = useCallback(() => {
@@ -111,6 +125,18 @@ function RGBViewer({ width, height, res, ims, algorithm }: CanvasProps) {
     console.log(bits);
 
     for (let i = 0; i < length; i += 1) {
+      if (useGrayscale) {
+        grayscaleBlock(
+          rReBlocks[i],
+          gReBlocks[i],
+          bReBlocks[i],
+          GrayscaleAlgorithm.AVERAGE,
+          {
+            clip,
+            shades: 2,
+          }
+        );
+      }
       for (let c = 0; c < 3; c += 1) {
         setBit(
           reChannels[c][i],
@@ -130,7 +156,19 @@ function RGBViewer({ width, height, res, ims, algorithm }: CanvasProps) {
 
     // draw
     context.putImageData(imageData, 0, 0);
-  }, [canvasRef, res, ims, text, pwd, noc, sob, sot, useRandom]);
+  }, [
+    canvasRef,
+    res,
+    ims,
+    text,
+    pwd,
+    noc,
+    sob,
+    sot,
+    clip,
+    useRandom,
+    useGrayscale,
+  ]);
 
   const handleReadButtonClick = useCallback(() => {
     if (!canvasRef.current || !res || !ims || !res.length || !ims.length) {
@@ -213,10 +251,22 @@ function RGBViewer({ width, height, res, ims, algorithm }: CanvasProps) {
           onChange={handlePwdChange}
         />
       ) : null}
+      {useGrayscale ? (
+        <Input
+          label="Clip:"
+          type="number"
+          min="0"
+          max="50"
+          placeholder="0 -50"
+          value={clip}
+          onChange={handleClipChange}
+        />
+      ) : null}
       <Input
         label="Tolerance:"
         type="number"
-        min="16"
+        min="0"
+        max="128"
         placeholder="Size of tolerance"
         value={sot}
         onChange={handleToleranceChange}
@@ -224,7 +274,8 @@ function RGBViewer({ width, height, res, ims, algorithm }: CanvasProps) {
       <Input
         label="Size:"
         type="number"
-        min="8"
+        min="2"
+        max="256"
         placeholder="Size of blocks"
         value={sob}
         onChange={handleSizeChange}
@@ -233,6 +284,7 @@ function RGBViewer({ width, height, res, ims, algorithm }: CanvasProps) {
         label="Copies:"
         type="number"
         min="1"
+        max="9"
         placeholder="Number of copies"
         value={noc}
         onChange={handleCopiesChange}
@@ -245,6 +297,13 @@ function RGBViewer({ width, height, res, ims, algorithm }: CanvasProps) {
           label="Use Random Block"
           checked={useRandom}
           onChange={handleRandomCheckboxChange}
+        />
+      ) : null}
+      {algorithm === TrasnformAlgorithm.FFT2D ? (
+        <Checkbox
+          label="Use Grayscale"
+          checked={useGrayscale}
+          onChange={handleGrayscaleCheckboxChange}
         />
       ) : null}
     </Viewer>

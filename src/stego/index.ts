@@ -11,6 +11,28 @@ export enum TrasnformAlgorithm {
   FFT2D = '2D-FFT',
 }
 
+// more:
+// http://www.tannerhelland.com/3643/grayscale-image-algorithm-vb6/
+export enum GrayscaleAlgorithm {
+  NONE = 'NONE',
+  AVERAGE = 'AVG',
+  LUMINANCE = 'LUMA',
+  LUMINANCE_II = 'LUMA_II',
+  DESATURATION = 'DESATURATION',
+  MAX_DECOMPOSITION = 'MAX_DE',
+  MIN_DECOMPOSITION = 'MIN_DE',
+  MID_DECOMPOSITION = 'MID_DE',
+  SIGNLE_R = 'R',
+  SIGNLE_G = 'G',
+  SIGNLE_B = 'B',
+  SHADES = 'SHADES',
+}
+
+export interface GrayscaleOptions {
+  clip: number;
+  shades: number;
+}
+
 export function shiftBlock(block: number[]) {
   block.forEach((n, i) => {
     block[i] = n - 128;
@@ -21,6 +43,72 @@ export function unshiftBlock(block: number[]) {
   block.forEach((n, i) => {
     block[i] = n + 128;
   });
+}
+
+export function grayscale(
+  r: number,
+  g: number,
+  b: number,
+  algorithm: GrayscaleAlgorithm,
+  { clip, shades }: GrayscaleOptions
+) {
+  const factor = 255 / (clamp(shades, 2, 256) - 1);
+  let gray = 0;
+
+  switch (algorithm) {
+    case GrayscaleAlgorithm.AVERAGE:
+      gray = (r + g + b) / 3;
+      break;
+    case GrayscaleAlgorithm.LUMINANCE:
+      gray = r * 0.3 + g * 0.59 + b * 0.11;
+      break;
+    case GrayscaleAlgorithm.LUMINANCE_II:
+      gray = r * 0.2126 + g * 0.7152 + b * 0.0722;
+      break;
+    case GrayscaleAlgorithm.DESATURATION:
+      gray = (Math.max(r, g, b) + Math.min(r, g, b)) / 2;
+      break;
+    case GrayscaleAlgorithm.MAX_DECOMPOSITION:
+      gray = Math.max(r, g, b);
+      break;
+    case GrayscaleAlgorithm.MIN_DECOMPOSITION:
+      gray = Math.min(r, g, b);
+      break;
+    case GrayscaleAlgorithm.MID_DECOMPOSITION:
+      gray = [r, g, b].sort()[1];
+      break;
+    case GrayscaleAlgorithm.SIGNLE_R:
+      gray = r;
+      break;
+    case GrayscaleAlgorithm.SIGNLE_G:
+      gray = g;
+      break;
+    case GrayscaleAlgorithm.SIGNLE_B:
+      gray = b;
+      break;
+    case GrayscaleAlgorithm.SHADES:
+      gray = Math.floor((r + g + b) / 3 / factor + 0.5) * factor;
+      break;
+  }
+  return clamp(Math.round(gray), clip, 255 - clip);
+}
+
+export function grayscaleBlock(
+  rBlock: number[],
+  gBlock: number[],
+  bBlock: number[],
+  algorithm: GrayscaleAlgorithm,
+  options: GrayscaleOptions
+) {
+  const length = rBlock.length;
+
+  for (let i = 0; i < length; i += 1) {
+    const gray = grayscale(rBlock[i], gBlock[i], bBlock[i], algorithm, options);
+
+    rBlock[i] = gray;
+    gBlock[i] = gray;
+    bBlock[i] = gray;
+  }
 }
 
 export function yuvBlocks(b1: number[], b2: number[], b3: number[]) {
