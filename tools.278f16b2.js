@@ -37704,7 +37704,1039 @@ var Input = function Input(_a) {
 };
 
 exports["default"] = Input;
-},{"react":"node_modules/react/index.js"}],"src/viewers/GrayscaleViewer.tsx":[function(require,module,exports) {
+},{"react":"node_modules/react/index.js"}],"src/fft/index.js":[function(require,module,exports) {
+/// fft.js
+
+/**
+ * Fast Fourier Transform module
+ * 1D-FFT/IFFT, 2D-FFT/IFFT (radix-2)
+ */
+(function () {
+  var FFT; // top-level namespace
+
+  var _root = this; // reference to 'window' or 'global'
+
+
+  if (typeof exports !== 'undefined') {
+    FFT = exports; // for CommonJS
+  } else {
+    FFT = _root.FFT = {};
+  }
+
+  var version = {
+    release: '0.3.0',
+    date: '2013-03'
+  };
+
+  FFT.toString = function () {
+    return 'version ' + version.release + ', released ' + version.date;
+  }; // core operations
+
+
+  var _n = 0,
+      // order
+  _bitrev = null,
+      // bit reversal table
+  _cstb = null; // sin/cos table
+
+  var core = {
+    init: function init(n) {
+      if (n !== 0 && (n & n - 1) === 0) {
+        _n = n;
+
+        core._initArray();
+
+        core._makeBitReversalTable();
+
+        core._makeCosSinTable();
+      } else {
+        throw new Error('init: radix-2 required');
+      }
+    },
+    // 1D-FFT
+    fft1d: function fft1d(re, im) {
+      core.fft(re, im, 1);
+    },
+    // 1D-IFFT
+    ifft1d: function ifft1d(re, im) {
+      var n = 1 / _n;
+      core.fft(re, im, -1);
+
+      for (var i = 0; i < _n; i++) {
+        re[i] *= n;
+        im[i] *= n;
+      }
+    },
+    // 2D-FFT
+    fft2d: function fft2d(re, im) {
+      var tre = [],
+          tim = [],
+          i = 0; // x-axis
+
+      for (var y = 0; y < _n; y++) {
+        i = y * _n;
+
+        for (var x1 = 0; x1 < _n; x1++) {
+          tre[x1] = re[x1 + i];
+          tim[x1] = im[x1 + i];
+        }
+
+        core.fft1d(tre, tim);
+
+        for (var x2 = 0; x2 < _n; x2++) {
+          re[x2 + i] = tre[x2];
+          im[x2 + i] = tim[x2];
+        }
+      } // y-axis
+
+
+      for (var x = 0; x < _n; x++) {
+        for (var y1 = 0; y1 < _n; y1++) {
+          i = x + y1 * _n;
+          tre[y1] = re[i];
+          tim[y1] = im[i];
+        }
+
+        core.fft1d(tre, tim);
+
+        for (var y2 = 0; y2 < _n; y2++) {
+          i = x + y2 * _n;
+          re[i] = tre[y2];
+          im[i] = tim[y2];
+        }
+      }
+    },
+    // 2D-IFFT
+    ifft2d: function ifft2d(re, im) {
+      var tre = [],
+          tim = [],
+          i = 0; // x-axis
+
+      for (var y = 0; y < _n; y++) {
+        i = y * _n;
+
+        for (var x1 = 0; x1 < _n; x1++) {
+          tre[x1] = re[x1 + i];
+          tim[x1] = im[x1 + i];
+        }
+
+        core.ifft1d(tre, tim);
+
+        for (var x2 = 0; x2 < _n; x2++) {
+          re[x2 + i] = tre[x2];
+          im[x2 + i] = tim[x2];
+        }
+      } // y-axis
+
+
+      for (var x = 0; x < _n; x++) {
+        for (var y1 = 0; y1 < _n; y1++) {
+          i = x + y1 * _n;
+          tre[y1] = re[i];
+          tim[y1] = im[i];
+        }
+
+        core.ifft1d(tre, tim);
+
+        for (var y2 = 0; y2 < _n; y2++) {
+          i = x + y2 * _n;
+          re[i] = tre[y2];
+          im[i] = tim[y2];
+        }
+      }
+    },
+    // core operation of FFT
+    fft: function fft(re, im, inv) {
+      var d,
+          h,
+          ik,
+          m,
+          tmp,
+          wr,
+          wi,
+          xr,
+          xi,
+          n4 = _n >> 2; // bit reversal
+
+      for (var l = 0; l < _n; l++) {
+        m = _bitrev[l];
+
+        if (l < m) {
+          tmp = re[l];
+          re[l] = re[m];
+          re[m] = tmp;
+          tmp = im[l];
+          im[l] = im[m];
+          im[m] = tmp;
+        }
+      } // butterfly operation
+
+
+      for (var k = 1; k < _n; k <<= 1) {
+        h = 0;
+        d = _n / (k << 1);
+
+        for (var j = 0; j < k; j++) {
+          wr = _cstb[h + n4];
+          wi = inv * _cstb[h];
+
+          for (var i = j; i < _n; i += k << 1) {
+            ik = i + k;
+            xr = wr * re[ik] + wi * im[ik];
+            xi = wr * im[ik] - wi * re[ik];
+            re[ik] = re[i] - xr;
+            re[i] += xr;
+            im[ik] = im[i] - xi;
+            im[i] += xi;
+          }
+
+          h += d;
+        }
+      }
+    },
+    // initialize the array (supports TypedArray)
+    _initArray: function _initArray() {
+      if (typeof Uint8Array !== 'undefined') {
+        _bitrev = new Uint8Array(_n);
+      } else {
+        _bitrev = [];
+      }
+
+      if (typeof Float64Array !== 'undefined') {
+        _cstb = new Float64Array(_n * 1.25);
+      } else {
+        _cstb = [];
+      }
+    },
+    // zero padding
+    _paddingZero: function _paddingZero() {// TODO
+    },
+    // makes bit reversal table
+    _makeBitReversalTable: function _makeBitReversalTable() {
+      var i = 0,
+          j = 0,
+          k = 0;
+      _bitrev[0] = 0;
+
+      while (++i < _n) {
+        k = _n >> 1;
+
+        while (k <= j) {
+          j -= k;
+          k >>= 1;
+        }
+
+        j += k;
+        _bitrev[i] = j;
+      }
+    },
+    // makes trigonometiric function table
+    _makeCosSinTable: function _makeCosSinTable() {
+      var n2 = _n >> 1,
+          n4 = _n >> 2,
+          n8 = _n >> 3,
+          n2p4 = n2 + n4,
+          t = Math.sin(Math.PI / _n),
+          dc = 2 * t * t,
+          ds = Math.sqrt(dc * (2 - dc)),
+          c = _cstb[n4] = 1,
+          s = _cstb[0] = 0;
+      t = 2 * dc;
+
+      for (var i = 1; i < n8; i++) {
+        c -= dc;
+        dc += t * c;
+        s += ds;
+        ds -= t * s;
+        _cstb[i] = s;
+        _cstb[n4 - i] = c;
+      }
+
+      if (n8 !== 0) {
+        _cstb[n8] = Math.sqrt(0.5);
+      }
+
+      for (var j = 0; j < n4; j++) {
+        _cstb[n2 - j] = _cstb[j];
+      }
+
+      for (var k = 0; k < n2p4; k++) {
+        _cstb[k + n2] = -_cstb[k];
+      }
+    }
+  }; // aliases (public APIs)
+
+  var apis = ['init', 'fft1d', 'ifft1d', 'fft2d', 'ifft2d'];
+
+  for (var i = 0; i < apis.length; i++) {
+    FFT[apis[i]] = core[apis[i]];
+  }
+
+  FFT.fft = core.fft1d;
+  FFT.ifft = core.ifft1d;
+}).call(this);
+},{}],"src/fast-dct/index.ts":[function(require,module,exports) {
+/*
+ * Fast discrete cosine transform algorithms (TypeScript)
+ *
+ * Copyright (c) 2019 Project Nayuki. (MIT License)
+ * https://www.nayuki.io/page/fast-discrete-cosine-transform-algorithms
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of
+ * this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+ * the Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ * - The above copyright notice and this permission notice shall be included in
+ *   all copies or substantial portions of the Software.
+ * - The Software is provided "as is", without warranty of any kind, express or
+ *   implied, including but not limited to the warranties of merchantability,
+ *   fitness for a particular purpose and noninfringement. In no event shall the
+ *   authors or copyright holders be liable for any claim, damages or other
+ *   liability, whether in an action of contract, tort or otherwise, arising from,
+ *   out of or in connection with the Software or the use or other dealings in the
+ *   Software.
+ */
+'use strict';
+
+exports.__esModule = true;
+var fastDct8;
+
+(function (fastDct8) {
+  // DCT type II, scaled. Algorithm by Arai, Agui, Nakajima, 1988.
+  // See: https://web.stanford.edu/class/ee398a/handouts/lectures/07-TransformCoding.pdf#page=30
+  function transform(vector) {
+    var v0 = vector[0] + vector[7];
+    var v1 = vector[1] + vector[6];
+    var v2 = vector[2] + vector[5];
+    var v3 = vector[3] + vector[4];
+    var v4 = vector[3] - vector[4];
+    var v5 = vector[2] - vector[5];
+    var v6 = vector[1] - vector[6];
+    var v7 = vector[0] - vector[7];
+    var v8 = v0 + v3;
+    var v9 = v1 + v2;
+    var v10 = v1 - v2;
+    var v11 = v0 - v3;
+    var v12 = -v4 - v5;
+    var v13 = (v5 + v6) * A[3];
+    var v14 = v6 + v7;
+    var v15 = v8 + v9;
+    var v16 = v8 - v9;
+    var v17 = (v10 + v11) * A[1];
+    var v18 = (v12 + v14) * A[5];
+    var v19 = -v12 * A[2] - v18;
+    var v20 = v14 * A[4] - v18;
+    var v21 = v17 + v11;
+    var v22 = v11 - v17;
+    var v23 = v13 + v7;
+    var v24 = v7 - v13;
+    var v25 = v19 + v24;
+    var v26 = v23 + v20;
+    var v27 = v23 - v20;
+    var v28 = v24 - v19;
+    vector[0] = S[0] * v15;
+    vector[1] = S[1] * v26;
+    vector[2] = S[2] * v21;
+    vector[3] = S[3] * v28;
+    vector[4] = S[4] * v16;
+    vector[5] = S[5] * v25;
+    vector[6] = S[6] * v22;
+    vector[7] = S[7] * v27;
+  }
+
+  fastDct8.transform = transform; // DCT type III, scaled. A straightforward inverse of the forward algorithm.
+
+  function inverseTransform(vector) {
+    var v15 = vector[0] / S[0];
+    var v26 = vector[1] / S[1];
+    var v21 = vector[2] / S[2];
+    var v28 = vector[3] / S[3];
+    var v16 = vector[4] / S[4];
+    var v25 = vector[5] / S[5];
+    var v22 = vector[6] / S[6];
+    var v27 = vector[7] / S[7];
+    var v19 = (v25 - v28) / 2;
+    var v20 = (v26 - v27) / 2;
+    var v23 = (v26 + v27) / 2;
+    var v24 = (v25 + v28) / 2;
+    var v7 = (v23 + v24) / 2;
+    var v11 = (v21 + v22) / 2;
+    var v13 = (v23 - v24) / 2;
+    var v17 = (v21 - v22) / 2;
+    var v8 = (v15 + v16) / 2;
+    var v9 = (v15 - v16) / 2;
+    var v18 = (v19 - v20) * A[5]; // Different from original
+
+    var v12 = (v19 * A[4] - v18) / (A[2] * A[5] - A[2] * A[4] - A[4] * A[5]);
+    var v14 = (v18 - v20 * A[2]) / (A[2] * A[5] - A[2] * A[4] - A[4] * A[5]);
+    var v6 = v14 - v7;
+    var v5 = v13 / A[3] - v6;
+    var v4 = -v5 - v12;
+    var v10 = v17 / A[1] - v11;
+    var v0 = (v8 + v11) / 2;
+    var v1 = (v9 + v10) / 2;
+    var v2 = (v9 - v10) / 2;
+    var v3 = (v8 - v11) / 2;
+    vector[0] = (v0 + v7) / 2;
+    vector[1] = (v1 + v6) / 2;
+    vector[2] = (v2 + v5) / 2;
+    vector[3] = (v3 + v4) / 2;
+    vector[4] = (v3 - v4) / 2;
+    vector[5] = (v2 - v5) / 2;
+    vector[6] = (v1 - v6) / 2;
+    vector[7] = (v0 - v7) / 2;
+  }
+
+  fastDct8.inverseTransform = inverseTransform;
+  var S = [];
+  var C = [];
+
+  for (var i = 0; i < 8; i++) {
+    C.push(Math.cos(Math.PI / 16 * i));
+    S.push(1 / (4 * C[i]));
+  }
+
+  S[0] = 1 / (2 * Math.sqrt(2));
+  var A = [NaN, C[4], C[2] - C[6], C[4], C[6] + C[2], C[6]];
+})(fastDct8 = exports.fastDct8 || (exports.fastDct8 = {}));
+
+var fastDctLee;
+
+(function (fastDctLee) {
+  // DCT type II, unscaled. Algorithm by Byeong Gi Lee, 1984.
+  // See: http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.118.3056&rep=rep1&type=pdf#page=34
+  function transform(vector) {
+    var n = vector.length;
+    if (n <= 0 || (n & n - 1) != 0) throw 'Length must be power of 2';
+    transformInternal(vector, 0, n, new Float64Array(n));
+  }
+
+  fastDctLee.transform = transform;
+
+  function transformInternal(vector, off, len, temp) {
+    if (len == 1) return;
+    var halfLen = Math.floor(len / 2);
+
+    for (var i = 0; i < halfLen; i++) {
+      var x = vector[off + i];
+      var y = vector[off + len - 1 - i];
+      temp[off + i] = x + y;
+      temp[off + i + halfLen] = (x - y) / (Math.cos((i + 0.5) * Math.PI / len) * 2);
+    }
+
+    transformInternal(temp, off, halfLen, vector);
+    transformInternal(temp, off + halfLen, halfLen, vector);
+
+    for (var i = 0; i < halfLen - 1; i++) {
+      vector[off + i * 2 + 0] = temp[off + i];
+      vector[off + i * 2 + 1] = temp[off + i + halfLen] + temp[off + i + halfLen + 1];
+    }
+
+    vector[off + len - 2] = temp[off + halfLen - 1];
+    vector[off + len - 1] = temp[off + len - 1];
+  } // DCT type III, unscaled. Algorithm by Byeong Gi Lee, 1984.
+  // See: https://www.nayuki.io/res/fast-discrete-cosine-transform-algorithms/lee-new-algo-discrete-cosine-transform.pdf
+
+
+  function inverseTransform(vector) {
+    var n = vector.length;
+    if (n <= 0 || (n & n - 1) != 0) throw 'Length must be power of 2';
+    vector[0] /= 2;
+    inverseTransformInternal(vector, 0, n, new Float64Array(n));
+  }
+
+  fastDctLee.inverseTransform = inverseTransform;
+
+  function inverseTransformInternal(vector, off, len, temp) {
+    if (len == 1) return;
+    var halfLen = Math.floor(len / 2);
+    temp[off + 0] = vector[off + 0];
+    temp[off + halfLen] = vector[off + 1];
+
+    for (var i = 1; i < halfLen; i++) {
+      temp[off + i] = vector[off + i * 2];
+      temp[off + i + halfLen] = vector[off + i * 2 - 1] + vector[off + i * 2 + 1];
+    }
+
+    inverseTransformInternal(temp, off, halfLen, vector);
+    inverseTransformInternal(temp, off + halfLen, halfLen, vector);
+
+    for (var i = 0; i < halfLen; i++) {
+      var x = temp[off + i];
+      var y = temp[off + i + halfLen] / (Math.cos((i + 0.5) * Math.PI / len) * 2);
+      vector[off + i] = x + y;
+      vector[off + len - 1 - i] = x - y;
+    }
+  }
+})(fastDctLee = exports.fastDctLee || (exports.fastDctLee = {}));
+},{}],"src/dct/index.ts":[function(require,module,exports) {
+"use strict"; // MORE:
+// https://en.wikipedia.org/wiki/JPEG
+
+exports.__esModule = true;
+var ONE_SQUARE_ROOT_OF_TWO = 1 / Math.sqrt(2); // type-II DCT
+
+function dct(nums, size) {
+  if (size === void 0) {
+    size = 8;
+  }
+
+  var coefficients = [];
+
+  for (var v = 0; v < size; v += 1) {
+    for (var u = 0; u < size; u += 1) {
+      var au = u === 0 ? ONE_SQUARE_ROOT_OF_TWO : 1;
+      var av = v === 0 ? ONE_SQUARE_ROOT_OF_TWO : 1;
+      var sum = 0;
+
+      for (var y = 0; y < size; y += 1) {
+        for (var x = 0; x < size; x += 1) {
+          sum += nums[y * size + x] * Math.cos((2 * x + 1) * u * Math.PI / 16) * Math.cos((2 * y + 1) * v * Math.PI / 16);
+        }
+      }
+
+      coefficients.push(sum * au * av / 4);
+    }
+  } // in-place update
+
+
+  for (var i = 0; i < coefficients.length; i += 1) {
+    nums[i] = coefficients[i];
+  }
+}
+
+exports.dct = dct; // type-III DCT
+
+function idct(coefficients, size) {
+  if (size === void 0) {
+    size = 8;
+  }
+
+  var nums = [];
+
+  for (var y = 0; y < size; y += 1) {
+    for (var x = 0; x < size; x += 1) {
+      var sum = 0;
+
+      for (var v = 0; v < size; v += 1) {
+        for (var u = 0; u < size; u += 1) {
+          var au = u === 0 ? ONE_SQUARE_ROOT_OF_TWO : 1;
+          var av = v === 0 ? ONE_SQUARE_ROOT_OF_TWO : 1;
+          sum += au * av * coefficients[v * size + u] * Math.cos((2 * x + 1) * u * Math.PI / 16) * Math.cos((2 * y + 1) * v * Math.PI / 16);
+        }
+      }
+
+      nums.push(sum / 4);
+    }
+  } // in-place update
+
+
+  for (var i = 0; i < nums.length; i += 1) {
+    coefficients[i] = nums[i];
+  }
+}
+
+exports.idct = idct;
+exports.QUANTIZATION_MATRIX = [16, 11, 10, 16, 24, 40, 51, 61, 12, 12, 14, 19, 26, 58, 60, 55, 14, 13, 16, 24, 40, 57, 69, 56, 14, 17, 22, 29, 51, 87, 80, 62, 18, 22, 37, 56, 68, 109, 103, 77, 24, 35, 55, 64, 81, 104, 113, 92, 49, 64, 78, 87, 103, 121, 120, 101, 72, 92, 95, 98, 112, 100, 103, 99];
+},{}],"src/stego/index.ts":[function(require,module,exports) {
+"use strict";
+
+var __importDefault = this && this.__importDefault || function (mod) {
+  return mod && mod.__esModule ? mod : {
+    "default": mod
+  };
+};
+
+exports.__esModule = true;
+
+var fft_1 = __importDefault(require("../fft"));
+
+var fast_dct_1 = require("../fast-dct");
+
+var helpers_1 = require("../helpers");
+
+var dct_1 = require("../dct");
+
+var TrasnformAlgorithm;
+
+(function (TrasnformAlgorithm) {
+  TrasnformAlgorithm["DCT2D"] = "2D-DCT";
+  TrasnformAlgorithm["FDCT8"] = "FDCT8";
+  TrasnformAlgorithm["FDCTLEE"] = "FDCTLEE";
+  TrasnformAlgorithm["FFT1D"] = "1D-FFT";
+  TrasnformAlgorithm["FFT2D"] = "2D-FFT";
+})(TrasnformAlgorithm = exports.TrasnformAlgorithm || (exports.TrasnformAlgorithm = {})); // more:
+// http://www.tannerhelland.com/3643/grayscale-image-algorithm-vb6/
+
+
+var GrayscaleAlgorithm;
+
+(function (GrayscaleAlgorithm) {
+  GrayscaleAlgorithm["NONE"] = "NONE";
+  GrayscaleAlgorithm["AVERAGE"] = "AVG";
+  GrayscaleAlgorithm["LUMINANCE"] = "LUMA";
+  GrayscaleAlgorithm["LUMINANCE_II"] = "LUMA_II";
+  GrayscaleAlgorithm["DESATURATION"] = "DESATURATION";
+  GrayscaleAlgorithm["MAX_DECOMPOSITION"] = "MAX_DE";
+  GrayscaleAlgorithm["MIN_DECOMPOSITION"] = "MIN_DE";
+  GrayscaleAlgorithm["MID_DECOMPOSITION"] = "MID_DE";
+  GrayscaleAlgorithm["SIGNLE_R"] = "R";
+  GrayscaleAlgorithm["SIGNLE_G"] = "G";
+  GrayscaleAlgorithm["SIGNLE_B"] = "B";
+  GrayscaleAlgorithm["SHADES"] = "SHADES";
+})(GrayscaleAlgorithm = exports.GrayscaleAlgorithm || (exports.GrayscaleAlgorithm = {}));
+
+function shiftBlock(block) {
+  block.forEach(function (n, i) {
+    block[i] = n - 128;
+  });
+}
+
+exports.shiftBlock = shiftBlock;
+
+function unshiftBlock(block) {
+  block.forEach(function (n, i) {
+    block[i] = n + 128;
+  });
+}
+
+exports.unshiftBlock = unshiftBlock;
+
+function grayscale(r, g, b, algorithm, _a) {
+  var clip = _a.clip,
+      shades = _a.shades;
+  var factor = 255 / (helpers_1.clamp(shades, 2, 256) - 1);
+  var gray = 0;
+
+  switch (algorithm) {
+    case GrayscaleAlgorithm.AVERAGE:
+      gray = (r + g + b) / 3;
+      break;
+
+    case GrayscaleAlgorithm.LUMINANCE:
+      gray = r * 0.3 + g * 0.59 + b * 0.11;
+      break;
+
+    case GrayscaleAlgorithm.LUMINANCE_II:
+      gray = r * 0.2126 + g * 0.7152 + b * 0.0722;
+      break;
+
+    case GrayscaleAlgorithm.DESATURATION:
+      gray = (Math.max(r, g, b) + Math.min(r, g, b)) / 2;
+      break;
+
+    case GrayscaleAlgorithm.MAX_DECOMPOSITION:
+      gray = Math.max(r, g, b);
+      break;
+
+    case GrayscaleAlgorithm.MIN_DECOMPOSITION:
+      gray = Math.min(r, g, b);
+      break;
+
+    case GrayscaleAlgorithm.MID_DECOMPOSITION:
+      gray = [r, g, b].sort()[1];
+      break;
+
+    case GrayscaleAlgorithm.SIGNLE_R:
+      gray = r;
+      break;
+
+    case GrayscaleAlgorithm.SIGNLE_G:
+      gray = g;
+      break;
+
+    case GrayscaleAlgorithm.SIGNLE_B:
+      gray = b;
+      break;
+
+    case GrayscaleAlgorithm.SHADES:
+      gray = Math.floor((r + g + b) / 3 / factor + 0.5) * factor;
+      break;
+  }
+
+  return helpers_1.clamp(Math.round(gray), clip, 255 - clip);
+}
+
+exports.grayscale = grayscale;
+
+function grayscaleBlock(rBlock, gBlock, bBlock, algorithm, options) {
+  var length = rBlock.length;
+
+  for (var i = 0; i < length; i += 1) {
+    var gray = grayscale(rBlock[i], gBlock[i], bBlock[i], algorithm, options);
+    rBlock[i] = gray;
+    gBlock[i] = gray;
+    bBlock[i] = gray;
+  }
+}
+
+exports.grayscaleBlock = grayscaleBlock;
+
+function yuvBlocks(b1, b2, b3) {
+  var _a;
+
+  for (var i = 0; i < b1.length; i += 1) {
+    var r = b1[i];
+    var g = b2[i];
+    var b = b3[i];
+    _a = helpers_1.rgb2yuv(r, g, b), b1[i] = _a[0], b2[i] = _a[1], b3[i] = _a[2];
+  }
+}
+
+exports.yuvBlocks = yuvBlocks;
+
+function rgbBlocks(b1, b2, b3) {
+  var _a;
+
+  for (var i = 0; i < b1.length; i += 1) {
+    var y = b1[i];
+    var u = b2[i];
+    var v = b3[i];
+    _a = helpers_1.yuv2rgb(y, u, v), b1[i] = _a[0], b2[i] = _a[1], b3[i] = _a[2];
+  }
+}
+
+exports.rgbBlocks = rgbBlocks;
+var previousIndex = -1;
+var previousPosition = -1;
+var previousCode = '';
+
+function getDynamicPositionInBlock(algorithm, pwd, index, channel, size) {
+  var _a; // same position for every channels in same block
+
+
+  if (previousIndex === index) {
+    return previousPosition;
+  } // reset env variables to initial value
+
+
+  if (index === 0) {
+    previousIndex = -1;
+    previousPosition = -1;
+    previousCode = '';
+  }
+
+  _a = helpers_1.hashCode(pwd + "_" + index + "_" + channel + "_" + previousCode, size * size - size * size / 4, []), previousPosition = _a[0], previousCode = _a[1];
+  previousIndex = index;
+  var currentPosition = previousPosition + size * size / 4;
+  previousPosition = currentPosition;
+  return currentPosition;
+}
+
+exports.getDynamicPositionInBlock = getDynamicPositionInBlock;
+
+function getStaticPositionInBlock(algorithm, size) {
+  switch (algorithm) {
+    case TrasnformAlgorithm.DCT2D:
+      return 0;
+
+    case TrasnformAlgorithm.FFT1D:
+      return size * size / 2 + size / 2;
+
+    case TrasnformAlgorithm.FFT2D:
+      return 0;
+
+    default:
+      return size * size - 1;
+    // right-bottom corner
+  }
+}
+
+exports.getStaticPositionInBlock = getStaticPositionInBlock;
+
+function getPositionInBlock(algorithm, pwd, index, channel, size) {
+  return pwd && algorithm === TrasnformAlgorithm.FFT1D ? getDynamicPositionInBlock(algorithm, pwd, index, channel, size) : getStaticPositionInBlock(algorithm, size);
+}
+
+exports.getPositionInBlock = getPositionInBlock;
+
+function divideBlocks(width, height, size, data) {
+  var blocks = [];
+
+  for (var h = 0; h < height; h += size) {
+    for (var w = 0; w < width; w += size) {
+      var block = [];
+
+      for (var h1 = 0; h1 < size; h1 += 1) {
+        for (var w1 = 0; w1 < size; w1 += 1) {
+          if (h + h1 < height && w + w1 < width) {
+            block[h1 * size + w1] = data[(h + h1) * width + w + w1];
+          } else {
+            break;
+          }
+        }
+      }
+
+      if (block.length === size * size) {
+        blocks.push(block);
+      }
+    }
+  }
+
+  return blocks;
+}
+
+exports.divideBlocks = divideBlocks;
+
+function str2bits(text, copies) {
+  return text.split('').reduce(function (acc, c) {
+    return acc.concat(encodeURI(c).split('').map(function (p) {
+      var rtn = [];
+      var reminder = 0;
+      var code = p.charCodeAt(0);
+
+      do {
+        reminder = code % 2;
+        rtn.push(reminder);
+        code = code - Math.floor(code / 2) - reminder;
+      } while (code > 1);
+
+      rtn.push(code);
+
+      while (rtn.length < 8) {
+        rtn.push(0);
+      }
+
+      return rtn.reverse();
+    })).flat();
+  }, []).reduce(function (acc, b) {
+    for (var i = 0; i < copies; i += 1) {
+      acc.push(b);
+    }
+
+    return acc;
+  }, []);
+}
+
+exports.str2bits = str2bits;
+
+function bits2str(bits, copies) {
+  var k = 128;
+  var temp = 0;
+  var chars = [];
+  var candidates = [];
+
+  var elect = function elect() {
+    return candidates.filter(function (c) {
+      return c === 1;
+    }).length >= copies / 2 ? 1 : 0;
+  };
+
+  for (var i = 0; i < bits.length; i += 1) {
+    candidates.push(bits[i]);
+
+    if (candidates.length === copies) {
+      temp += elect() * k;
+      k /= 2;
+      candidates.length = 0; // end of message
+
+      if (temp === 255) {
+        break;
+      }
+
+      if (k < 1) {
+        chars.push(String.fromCharCode(temp));
+        temp = 0;
+        k = 128;
+      }
+    }
+  }
+
+  return decodeURI(chars.join(''));
+}
+
+exports.bits2str = bits2str;
+
+function generateBits(length) {
+  var bits = Array.from(new Array(length));
+
+  for (var i = 0; i < length; i += 1) {
+    bits[i] = Math.floor(Math.random() * 2);
+  }
+
+  return bits;
+}
+
+exports.generateBits = generateBits;
+
+function writeBits(dest) {
+  var _a;
+
+  var source = [];
+
+  for (var _i = 1; _i < arguments.length; _i++) {
+    source[_i - 1] = arguments[_i];
+  }
+
+  var inArray = [];
+  var index;
+  var code = '643575433';
+
+  for (var i = 0; i < source.length; i += 1) {
+    var bits = source[i];
+
+    for (var j = 0; j < bits.length; j += 1) {
+      _a = helpers_1.hashCode(code, dest.length, inArray), index = _a[0], code = _a[1];
+      dest[index] = bits[j];
+    }
+  }
+
+  return dest;
+}
+
+exports.writeBits = writeBits;
+
+function readBits(dest) {
+  var _a;
+
+  var bits = [];
+  var inArray = [];
+  var index;
+  var code = '643575433';
+
+  for (var i = 0; i < dest.length; i += 1) {
+    _a = helpers_1.hashCode(code, dest.length, inArray), index = _a[0], code = _a[1];
+    bits.push(dest[index]);
+  }
+
+  return bits;
+}
+
+exports.readBits = readBits;
+
+function mergeBits(dest) {
+  var source = [];
+
+  for (var _i = 1; _i < arguments.length; _i++) {
+    source[_i - 1] = arguments[_i];
+  }
+
+  var k = 0;
+
+  for (var i = 0; i < source.length; i += 1) {
+    var bits = source[i];
+
+    for (var j = 0; j < bits.length && k < dest.length; j += 1, k += 1) {
+      dest[k] = bits[j];
+    }
+  }
+
+  return dest;
+}
+
+exports.mergeBits = mergeBits;
+
+function getBit(reBlock, imBlock, pwd, index, channel, size, tolerance, algorithm) {
+  var position = getPositionInBlock(algorithm, pwd, index, channel, size);
+  transform(reBlock, imBlock, algorithm, size);
+  return Math.abs(Math.round(reBlock[position] / tolerance) % 2);
+}
+
+exports.getBit = getBit;
+
+function setBit(reBlock, imBlock, bit, pwd, index, channel, size, tolerance, algorithm) {
+  transform(reBlock, imBlock, algorithm, size);
+  var position = getPositionInBlock(algorithm, pwd, index, channel, size);
+  var v = Math.floor(reBlock[position] / tolerance);
+
+  if (bit[0]) {
+    reBlock[position] = v % 2 === 1 ? v * tolerance : (v + 1) * tolerance;
+  } else {
+    reBlock[position] = v % 2 === 1 ? (v - 1) * tolerance : v * tolerance;
+  }
+
+  inverseTransform(reBlock, imBlock, algorithm, size);
+}
+
+exports.setBit = setBit;
+
+function transform(re, im, algorithm, size) {
+  switch (algorithm) {
+    case TrasnformAlgorithm.DCT2D:
+      shiftBlock(re);
+      dct_1.dct(re, size);
+      break;
+
+    case TrasnformAlgorithm.FDCT8:
+      fast_dct_1.fastDct8.transform(re);
+      break;
+
+    case TrasnformAlgorithm.FDCTLEE:
+      fast_dct_1.fastDctLee.transform(re);
+      break;
+
+    case TrasnformAlgorithm.FFT1D:
+      fft_1["default"].init(size);
+      fft_1["default"].fft1d(re, im);
+      break;
+
+    case TrasnformAlgorithm.FFT2D:
+      fft_1["default"].init(size);
+      fft_1["default"].fft2d(re, im);
+      break;
+
+    default:
+      throw new Error("unknown algorithm: " + algorithm);
+  }
+}
+
+exports.transform = transform;
+
+function inverseTransform(re, im, algorithm, size) {
+  switch (algorithm) {
+    case TrasnformAlgorithm.DCT2D:
+      dct_1.idct(re, size);
+      unshiftBlock(re);
+      break;
+
+    case TrasnformAlgorithm.FDCT8:
+      fast_dct_1.fastDct8.inverseTransform(re);
+      break;
+
+    case TrasnformAlgorithm.FDCTLEE:
+      fast_dct_1.fastDctLee.inverseTransform(re);
+      break;
+
+    case TrasnformAlgorithm.FFT1D:
+      fft_1["default"].init(size);
+      fft_1["default"].ifft1d(re, im);
+      break;
+
+    case TrasnformAlgorithm.FFT2D:
+      fft_1["default"].init(size);
+      fft_1["default"].ifft2d(re, im);
+      break;
+
+    default:
+      throw new Error("unknown algorithm: " + algorithm);
+  }
+}
+
+exports.inverseTransform = inverseTransform;
+
+function setImage(block, imageData, index, size, offset) {
+  // const complement = block.reduce((acc, i) => (i > acc ? i : acc), 0) - 255;
+  // const max = block.reduce((acc, i) => (i > acc ? i : acc), 0);
+  var width = imageData.width;
+  var h1 = Math.floor(index / Math.floor(width / size)) * size;
+  var w1 = index % Math.floor(width / size) * size;
+
+  for (var i = 0; i < block.length; i += 1) {
+    var h2 = Math.floor(i / size);
+    var w2 = i % size;
+    imageData.data[((h1 + h2) * width + w1 + w2) * 4 + offset] = helpers_1.clamp(Math.round(block[i]), 0, 255); // imageData.data[((h1 + h2) * width + w1 + w2) * 4 + offset] = Math.round(
+    //   (block[i] * 255) / max
+    // );
+    // imageData.data[((h1 + h2) * width + w1 + w2) * 4 + offset] = 255;
+    // imageData.data[((h1 + h2) * width + w1 + w2) * 4 + offset] =
+    //   complement > 0 ? block[i] - complement : block[i];
+  }
+}
+
+exports.setImage = setImage;
+},{"../fft":"src/fft/index.js","../fast-dct":"src/fast-dct/index.ts","../helpers":"src/helpers/index.ts","../dct":"src/dct/index.ts"}],"src/viewers/GrayscaleViewer.tsx":[function(require,module,exports) {
 "use strict";
 
 var __importStar = this && this.__importStar || function (mod) {
@@ -37735,23 +38767,7 @@ var Canvas_1 = __importDefault(require("../components/Canvas"));
 
 var Input_1 = __importDefault(require("../components/Input"));
 
-var helpers_1 = require("../helpers");
-
-var GrayscaleAlgorithm;
-
-(function (GrayscaleAlgorithm) {
-  GrayscaleAlgorithm["AVERAGE"] = "AVG";
-  GrayscaleAlgorithm["LUMINANCE"] = "LUMA";
-  GrayscaleAlgorithm["LUMINANCE_II"] = "LUMA_II";
-  GrayscaleAlgorithm["DESATURATION"] = "DESATURATION";
-  GrayscaleAlgorithm["MAX_DECOMPOSITION"] = "MAX_DE";
-  GrayscaleAlgorithm["MIN_DECOMPOSITION"] = "MIN_DE";
-  GrayscaleAlgorithm["MID_DECOMPOSITION"] = "MID_DE";
-  GrayscaleAlgorithm["SIGNLE_R"] = "R";
-  GrayscaleAlgorithm["SIGNLE_G"] = "G";
-  GrayscaleAlgorithm["SIGNLE_B"] = "B";
-  GrayscaleAlgorithm["SHADES"] = "SHADES";
-})(GrayscaleAlgorithm = exports.GrayscaleAlgorithm || (exports.GrayscaleAlgorithm = {}));
+var stego_1 = require("../stego");
 
 function GrayscaleViewer(_a) {
   var width = _a.width,
@@ -37760,13 +38776,21 @@ function GrayscaleViewer(_a) {
       ims = _a.ims;
   var canvasRef = react_1.useRef(null);
 
-  var _b = react_1.useState(2),
-      shades = _b[0],
-      setShades = _b[1];
+  var _b = react_1.useState(5),
+      clip = _b[0],
+      setClip = _b[1];
 
-  var _c = react_1.useState(GrayscaleAlgorithm.AVERAGE),
-      algorithm = _c[0],
-      setAlgorithm = _c[1];
+  var _c = react_1.useState(2),
+      shades = _c[0],
+      setShades = _c[1];
+
+  var _d = react_1.useState(''),
+      diagramUrl = _d[0],
+      setDiagramUrl = _d[1];
+
+  var _e = react_1.useState(stego_1.GrayscaleAlgorithm.AVERAGE),
+      algorithm = _e[0],
+      setAlgorithm = _e[1];
 
   react_1.useEffect(function () {
     if (!canvasRef.current || !res || !res.length) {
@@ -37774,81 +38798,53 @@ function GrayscaleViewer(_a) {
     } // convert to gray range [0-256)
 
 
+    var grays = new Set();
     var context = canvasRef.current.getContext('2d');
     var imageData = context.getImageData(0, 0, width, height);
     var length = width * height;
-    var factor = 255 / (helpers_1.clamp(shades, 2, 256) - 1);
 
     for (var i = 0; i < length; i += 1) {
-      var r = res[0][i];
-      var g = res[1][i];
-      var b = res[2][i];
-      var gray = 0;
-
-      switch (algorithm) {
-        case GrayscaleAlgorithm.AVERAGE:
-          gray = (r + g + b) / 3;
-          break;
-
-        case GrayscaleAlgorithm.LUMINANCE:
-          gray = r * 0.3 + g * 0.59 + b * 0.11;
-          break;
-
-        case GrayscaleAlgorithm.LUMINANCE_II:
-          gray = r * 0.2126 + g * 0.7152 + b * 0.0722;
-          break;
-
-        case GrayscaleAlgorithm.DESATURATION:
-          gray = (Math.max(r, g, b) + Math.min(r, g, b)) / 2;
-          break;
-
-        case GrayscaleAlgorithm.MAX_DECOMPOSITION:
-          gray = Math.max(r, g, b);
-          break;
-
-        case GrayscaleAlgorithm.MIN_DECOMPOSITION:
-          gray = Math.min(r, g, b);
-          break;
-
-        case GrayscaleAlgorithm.MID_DECOMPOSITION:
-          gray = [r, g, b].sort()[1];
-          break;
-
-        case GrayscaleAlgorithm.SIGNLE_R:
-          gray = r;
-          break;
-
-        case GrayscaleAlgorithm.SIGNLE_G:
-          gray = g;
-          break;
-
-        case GrayscaleAlgorithm.SIGNLE_B:
-          gray = b;
-          break;
-
-        case GrayscaleAlgorithm.SHADES:
-          gray = Math.floor((r + g + b) / 3 / factor + 0.5) * factor;
-          break;
-      }
-
+      var gray = stego_1.grayscale(res[0][i], res[1][i], res[2][i], algorithm, {
+        clip: clip,
+        shades: shades
+      });
+      grays.add(gray);
       imageData.data[i * 4] = gray;
       imageData.data[i * 4 + 1] = gray;
       imageData.data[i * 4 + 2] = gray;
       imageData.data[i * 4 + 3] = 255;
-    } // draw
+    }
 
+    setDiagramUrl("https://image-charts.com/chart?chs=" + width + "x" + height + "&cht=bvs&chd=t:" + (grays.size ? Array.from(grays.values()).sort(function (a, b) {
+      return a - b;
+    }).map(function (v) {
+      return Math.round(v * 101 / 256);
+    }).join(',') : [])); // draw
 
     context.clearRect(0, 0, width, height);
     context.putImageData(imageData, 0, 0);
-  }, [canvasRef, algorithm, res, shades]);
+  }, [canvasRef, algorithm, res, clip, shades]);
   return react_1["default"].createElement(Viewer_1["default"], {
     title: "Grayscale"
   }, react_1["default"].createElement(Canvas_1["default"], {
     width: width,
     height: height,
     ref: canvasRef
-  }), Object.keys(GrayscaleAlgorithm).map(function (k) {
-    var selectedAlgorithm = GrayscaleAlgorithm[k];
+  }), diagramUrl ? react_1["default"].createElement("img", {
+    src: diagramUrl
+  }) : null, react_1["default"].createElement(Input_1["default"], {
+    type: "number",
+    label: "Colors to be clipped",
+    placeholder: "0 - 50",
+    max: "50",
+    min: "0",
+    defaultValue: "5",
+    onChange: function onChange(_a) {
+      var currentTarget = _a.currentTarget;
+      return setClip(parseInt(currentTarget.value, 10));
+    }
+  }), Object.keys(stego_1.GrayscaleAlgorithm).map(function (k) {
+    var selectedAlgorithm = stego_1.GrayscaleAlgorithm[k];
     return react_1["default"].createElement("div", {
       key: selectedAlgorithm,
       style: {
@@ -37862,7 +38858,7 @@ function GrayscaleViewer(_a) {
       onChange: function onChange() {
         return setAlgorithm(selectedAlgorithm);
       }
-    }), algorithm === GrayscaleAlgorithm.SHADES && selectedAlgorithm === GrayscaleAlgorithm.SHADES ? react_1["default"].createElement(Input_1["default"], {
+    }), algorithm === stego_1.GrayscaleAlgorithm.SHADES && selectedAlgorithm === stego_1.GrayscaleAlgorithm.SHADES ? react_1["default"].createElement(Input_1["default"], {
       type: "number",
       label: "",
       placeholder: "num of shades",
@@ -37878,7 +38874,7 @@ function GrayscaleViewer(_a) {
 }
 
 exports["default"] = GrayscaleViewer;
-},{"react":"node_modules/react/index.js","../components/Viewer":"src/components/Viewer.tsx","../components/Checkbox":"src/components/Checkbox.tsx","../components/Canvas":"src/components/Canvas.ts","../components/Input":"src/components/Input.tsx","../helpers":"src/helpers/index.ts"}],"src/tools.tsx":[function(require,module,exports) {
+},{"react":"node_modules/react/index.js","../components/Viewer":"src/components/Viewer.tsx","../components/Checkbox":"src/components/Checkbox.tsx","../components/Canvas":"src/components/Canvas.ts","../components/Input":"src/components/Input.tsx","../stego":"src/stego/index.ts"}],"src/tools.tsx":[function(require,module,exports) {
 "use strict";
 
 var __importStar = this && this.__importStar || function (mod) {
@@ -37996,7 +38992,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "63657" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "57638" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

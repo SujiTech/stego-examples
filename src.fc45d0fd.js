@@ -37787,7 +37787,26 @@ var TrasnformAlgorithm;
   TrasnformAlgorithm["FDCTLEE"] = "FDCTLEE";
   TrasnformAlgorithm["FFT1D"] = "1D-FFT";
   TrasnformAlgorithm["FFT2D"] = "2D-FFT";
-})(TrasnformAlgorithm = exports.TrasnformAlgorithm || (exports.TrasnformAlgorithm = {}));
+})(TrasnformAlgorithm = exports.TrasnformAlgorithm || (exports.TrasnformAlgorithm = {})); // more:
+// http://www.tannerhelland.com/3643/grayscale-image-algorithm-vb6/
+
+
+var GrayscaleAlgorithm;
+
+(function (GrayscaleAlgorithm) {
+  GrayscaleAlgorithm["NONE"] = "NONE";
+  GrayscaleAlgorithm["AVERAGE"] = "AVG";
+  GrayscaleAlgorithm["LUMINANCE"] = "LUMA";
+  GrayscaleAlgorithm["LUMINANCE_II"] = "LUMA_II";
+  GrayscaleAlgorithm["DESATURATION"] = "DESATURATION";
+  GrayscaleAlgorithm["MAX_DECOMPOSITION"] = "MAX_DE";
+  GrayscaleAlgorithm["MIN_DECOMPOSITION"] = "MIN_DE";
+  GrayscaleAlgorithm["MID_DECOMPOSITION"] = "MID_DE";
+  GrayscaleAlgorithm["SIGNLE_R"] = "R";
+  GrayscaleAlgorithm["SIGNLE_G"] = "G";
+  GrayscaleAlgorithm["SIGNLE_B"] = "B";
+  GrayscaleAlgorithm["SHADES"] = "SHADES";
+})(GrayscaleAlgorithm = exports.GrayscaleAlgorithm || (exports.GrayscaleAlgorithm = {}));
 
 function shiftBlock(block) {
   block.forEach(function (n, i) {
@@ -37804,6 +37823,76 @@ function unshiftBlock(block) {
 }
 
 exports.unshiftBlock = unshiftBlock;
+
+function grayscale(r, g, b, algorithm, _a) {
+  var clip = _a.clip,
+      shades = _a.shades;
+  var factor = 255 / (helpers_1.clamp(shades, 2, 256) - 1);
+  var gray = 0;
+
+  switch (algorithm) {
+    case GrayscaleAlgorithm.AVERAGE:
+      gray = (r + g + b) / 3;
+      break;
+
+    case GrayscaleAlgorithm.LUMINANCE:
+      gray = r * 0.3 + g * 0.59 + b * 0.11;
+      break;
+
+    case GrayscaleAlgorithm.LUMINANCE_II:
+      gray = r * 0.2126 + g * 0.7152 + b * 0.0722;
+      break;
+
+    case GrayscaleAlgorithm.DESATURATION:
+      gray = (Math.max(r, g, b) + Math.min(r, g, b)) / 2;
+      break;
+
+    case GrayscaleAlgorithm.MAX_DECOMPOSITION:
+      gray = Math.max(r, g, b);
+      break;
+
+    case GrayscaleAlgorithm.MIN_DECOMPOSITION:
+      gray = Math.min(r, g, b);
+      break;
+
+    case GrayscaleAlgorithm.MID_DECOMPOSITION:
+      gray = [r, g, b].sort()[1];
+      break;
+
+    case GrayscaleAlgorithm.SIGNLE_R:
+      gray = r;
+      break;
+
+    case GrayscaleAlgorithm.SIGNLE_G:
+      gray = g;
+      break;
+
+    case GrayscaleAlgorithm.SIGNLE_B:
+      gray = b;
+      break;
+
+    case GrayscaleAlgorithm.SHADES:
+      gray = Math.floor((r + g + b) / 3 / factor + 0.5) * factor;
+      break;
+  }
+
+  return helpers_1.clamp(Math.round(gray), clip, 255 - clip);
+}
+
+exports.grayscale = grayscale;
+
+function grayscaleBlock(rBlock, gBlock, bBlock, algorithm, options) {
+  var length = rBlock.length;
+
+  for (var i = 0; i < length; i += 1) {
+    var gray = grayscale(rBlock[i], gBlock[i], bBlock[i], algorithm, options);
+    rBlock[i] = gray;
+    gBlock[i] = gray;
+    bBlock[i] = gray;
+  }
+}
+
+exports.grayscaleBlock = grayscaleBlock;
 
 function yuvBlocks(b1, b2, b3) {
   var _a;
@@ -38227,6 +38316,8 @@ var stego_1 = require("../../stego");
 
 var Checkbox_1 = __importDefault(require("../../components/Checkbox"));
 
+var helpers_1 = require("../../helpers");
+
 function RGBViewer(_a) {
   var width = _a.width,
       height = _a.height,
@@ -38239,31 +38330,39 @@ function RGBViewer(_a) {
       useRandom = _b[0],
       setUseRandom = _b[1];
 
-  var _c = react_1.useState('text'),
-      text = _c[0],
-      setText = _c[1];
+  var _c = react_1.useState(false),
+      useGrayscale = _c[0],
+      setUseGrayscale = _c[1];
 
-  var _d = react_1.useState('password'),
-      pwd = _d[0],
-      setPwd = _d[1];
+  var _d = react_1.useState('text'),
+      text = _d[0],
+      setText = _d[1];
 
-  var _e = react_1.useState(''),
-      error = _e[0],
-      setError = _e[1];
+  var _e = react_1.useState('password'),
+      pwd = _e[0],
+      setPwd = _e[1];
 
-  var _f = react_1.useState(5),
-      noc = _f[0],
-      setNoc = _f[1]; // num of copies
+  var _f = react_1.useState(15),
+      clip = _f[0],
+      setClip = _f[1];
+
+  var _g = react_1.useState(''),
+      error = _g[0],
+      setError = _g[1];
+
+  var _h = react_1.useState(5),
+      noc = _h[0],
+      setNoc = _h[1]; // num of copies
 
 
-  var _g = react_1.useState(8),
-      sob = _g[0],
-      setSob = _g[1]; // size of blocks
+  var _j = react_1.useState(8),
+      sob = _j[0],
+      setSob = _j[1]; // size of blocks
 
 
-  var _h = react_1.useState(16),
-      sot = _h[0],
-      setSot = _h[1]; // size of tolerance
+  var _k = react_1.useState(16),
+      sot = _k[0],
+      setSot = _k[1]; // size of tolerance
 
 
   var handleTextChange = react_1.useCallback(function (_a) {
@@ -38272,23 +38371,30 @@ function RGBViewer(_a) {
   }, []);
   var handleCopiesChange = react_1.useCallback(function (_a) {
     var currentTarget = _a.currentTarget;
-    return setNoc(parseInt(currentTarget.value, 10));
+    return setNoc(helpers_1.clamp(parseInt(currentTarget.value, 10), 1, 9));
   }, []);
   var handlePwdChange = react_1.useCallback(function (_a) {
     var currentTarget = _a.currentTarget;
     return setPwd(currentTarget.value);
   }, []);
+  var handleClipChange = react_1.useCallback(function (_a) {
+    var currentTarget = _a.currentTarget;
+    return setClip(helpers_1.clamp(parseInt(currentTarget.value, 10), 0, 50));
+  }, []);
   var handleToleranceChange = react_1.useCallback(function (_a) {
     var currentTarget = _a.currentTarget;
-    return setSot(parseInt(currentTarget.value, 10));
+    return setSot(helpers_1.clamp(parseInt(currentTarget.value, 10), 0, 128));
   }, []);
   var handleSizeChange = react_1.useCallback(function (_a) {
     var currentTarget = _a.currentTarget;
-    return setSob(parseInt(currentTarget.value, 10));
+    return setSob(helpers_1.clamp(parseInt(currentTarget.value, 10), 2, 256));
   }, []);
   var handleRandomCheckboxChange = react_1.useCallback(function () {
     return setUseRandom(!useRandom);
   }, [useRandom]);
+  var handleGrayscaleCheckboxChange = react_1.useCallback(function () {
+    return setUseGrayscale(!useGrayscale);
+  }, [useGrayscale]);
   var handleWriteButtonClick = react_1.useCallback(function () {
     setError('');
 
@@ -38334,6 +38440,13 @@ function RGBViewer(_a) {
     console.log(bits);
 
     for (var i = 0; i < length; i += 1) {
+      if (useGrayscale) {
+        stego_1.grayscaleBlock(rReBlocks[i], gReBlocks[i], bReBlocks[i], stego_1.GrayscaleAlgorithm.AVERAGE, {
+          clip: clip,
+          shades: 2
+        });
+      }
+
       for (var c = 0; c < 3; c += 1) {
         stego_1.setBit(reChannels[c][i], imChannels[c][i], bits.slice(j, j + 1), useRandom ? pwd : '', i, c, sob, sot, algorithm);
         stego_1.setImage(reChannels[c][i], imageData, i, sob, c);
@@ -38343,7 +38456,7 @@ function RGBViewer(_a) {
 
 
     context.putImageData(imageData, 0, 0);
-  }, [canvasRef, res, ims, text, pwd, noc, sob, sot, useRandom]);
+  }, [canvasRef, res, ims, text, pwd, noc, sob, sot, clip, useRandom, useGrayscale]);
   var handleReadButtonClick = react_1.useCallback(function () {
     if (!canvasRef.current || !res || !ims || !res.length || !ims.length) {
       return;
@@ -38409,17 +38522,27 @@ function RGBViewer(_a) {
     placeholder: "Number of copies",
     value: pwd,
     onChange: handlePwdChange
+  }) : null, useGrayscale ? react_1["default"].createElement(Input_1["default"], {
+    label: "Clip:",
+    type: "number",
+    min: "0",
+    max: "50",
+    placeholder: "0 -50",
+    value: clip,
+    onChange: handleClipChange
   }) : null, react_1["default"].createElement(Input_1["default"], {
     label: "Tolerance:",
     type: "number",
-    min: "16",
+    min: "0",
+    max: "128",
     placeholder: "Size of tolerance",
     value: sot,
     onChange: handleToleranceChange
   }), react_1["default"].createElement(Input_1["default"], {
     label: "Size:",
     type: "number",
-    min: "8",
+    min: "2",
+    max: "256",
     placeholder: "Size of blocks",
     value: sob,
     onChange: handleSizeChange
@@ -38427,6 +38550,7 @@ function RGBViewer(_a) {
     label: "Copies:",
     type: "number",
     min: "1",
+    max: "9",
     placeholder: "Number of copies",
     value: noc,
     onChange: handleCopiesChange
@@ -38442,11 +38566,15 @@ function RGBViewer(_a) {
     label: "Use Random Block",
     checked: useRandom,
     onChange: handleRandomCheckboxChange
+  }) : null, algorithm === stego_1.TrasnformAlgorithm.FFT2D ? react_1["default"].createElement(Checkbox_1["default"], {
+    label: "Use Grayscale",
+    checked: useGrayscale,
+    onChange: handleGrayscaleCheckboxChange
   }) : null);
 }
 
 exports["default"] = RGBViewer;
-},{"react":"node_modules/react/index.js","../../components/Viewer":"src/components/Viewer.tsx","../../components/Canvas":"src/components/Canvas.ts","../../components/Input":"src/components/Input.tsx","../../stego":"src/stego/index.ts","../../components/Checkbox":"src/components/Checkbox.tsx"}],"src/components/Picker.tsx":[function(require,module,exports) {
+},{"react":"node_modules/react/index.js","../../components/Viewer":"src/components/Viewer.tsx","../../components/Canvas":"src/components/Canvas.ts","../../components/Input":"src/components/Input.tsx","../../stego":"src/stego/index.ts","../../components/Checkbox":"src/components/Checkbox.tsx","../../helpers":"src/helpers/index.ts"}],"src/components/Picker.tsx":[function(require,module,exports) {
 "use strict";
 
 var __importStar = this && this.__importStar || function (mod) {
@@ -38658,7 +38786,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "63657" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "57638" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
