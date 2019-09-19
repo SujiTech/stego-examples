@@ -121,8 +121,10 @@ function RGBViewer({ width, height, res, ims, algorithm }: CanvasProps) {
     const reChannels = [rReBlocks, gReBlocks, bReBlocks];
     const imChannels = [rImBlocks, gImBlocks, bImBlocks];
 
-    console.log('write:');
-    console.log(bits);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('write:');
+      console.log(bits);
+    }
 
     for (let i = 0; i < length; i += 1) {
       if (useGrayscale) {
@@ -204,8 +206,10 @@ function RGBViewer({ width, height, res, ims, algorithm }: CanvasProps) {
       }
     }
 
-    console.log('read:');
-    console.log(bits);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('read:');
+      console.log(bits);
+    }
 
     // update text
     setText(bits2str(bits, noc));
